@@ -1,0 +1,47 @@
+# 开发环境配置
+env: dev
+
+server:
+  host: 0.0.0.0
+  port: 8888
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: ""
+  database: test
+  charset: utf8mb4
+  max_idle_conns: 10
+  max_open_conns: 50
+  conn_max_lifetime: 30m
+  log_level: 4  # 开发环境显示所有 SQL
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+  min_idle_conns: 5
+  dial_timeout: 3s
+  read_timeout: 1s
+  write_timeout: 1s
+
+log:
+  level: debug  # 开发环境使用 debug 级别
+  filename: logs/app.log
+  max_size: 50
+  max_backups: 3
+  max_age: 7
+  compress: false
+  color: true
+
+jwt:
+  secret: dev-secret-key-not-for-production
+  issuer: test-tt
+  expire_time: 24h
+
+ratelimit:
+  rate: 1000    # 开发环境放宽限制
+  burst: 2000

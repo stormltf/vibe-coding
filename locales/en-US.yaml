@@ -1,0 +1,35 @@
+# English
+# Common
+success: "Success"
+failed: "Failed"
+error: "Error"
+
+# Error messages
+err.invalid_params: "Invalid parameters"
+err.unauthorized: "Unauthorized"
+err.forbidden: "Forbidden"
+err.not_found: "Resource not found"
+err.internal: "Internal server error"
+err.too_many_requests: "Too many requests"
+err.service_unavailable: "Service temporarily unavailable"
+err.timeout: "Request timeout"
+
+# User related
+user.not_found: "User not found"
+user.already_exists: "User already exists"
+user.create_success: "User created successfully"
+user.update_success: "User updated successfully"
+user.delete_success: "User deleted successfully"
+
+# Authentication related
+auth.token_expired: "Token has expired"
+auth.token_invalid: "Invalid token"
+auth.login_success: "Login successful"
+auth.logout_success: "Logout successful"
+
+# Validation related
+validate.required: "%s is required"
+validate.email: "%s must be a valid email"
+validate.min: "%s minimum value is %s"
+validate.max: "%s maximum value is %s"
+validate.length: "%s length must be %s"

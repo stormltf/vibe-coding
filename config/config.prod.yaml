@@ -1,0 +1,47 @@
+# 生产环境配置
+env: prod
+
+server:
+  host: 0.0.0.0
+  port: 8888
+
+mysql:
+  host: ${MYSQL_HOST:mysql}
+  port: 3306
+  username: ${MYSQL_USER:root}
+  password: ${MYSQL_PASSWORD:}
+  database: ${MYSQL_DATABASE:test}
+  charset: utf8mb4
+  max_idle_conns: 50
+  max_open_conns: 200
+  conn_max_lifetime: 30m
+  log_level: 2  # 生产环境只记录错误
+
+redis:
+  host: ${REDIS_HOST:redis}
+  port: 6379
+  password: ${REDIS_PASSWORD:}
+  db: 0
+  pool_size: 100
+  min_idle_conns: 20
+  dial_timeout: 3s
+  read_timeout: 1s
+  write_timeout: 1s
+
+log:
+  level: info  # 生产环境使用 info 级别
+  filename: logs/app.log
+  max_size: 100
+  max_backups: 10
+  max_age: 30
+  compress: true
+  color: false  # 生产环境不使用彩色
+
+jwt:
+  secret: ${JWT_SECRET:change-me-in-production}
+  issuer: test-tt
+  expire_time: 2h  # 生产环境缩短过期时间
+
+ratelimit:
+  rate: 100
+  burst: 200

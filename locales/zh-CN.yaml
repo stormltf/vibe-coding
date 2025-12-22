@@ -1,0 +1,35 @@
+# 简体中文
+# 通用
+success: "成功"
+failed: "失败"
+error: "错误"
+
+# 错误消息
+err.invalid_params: "参数无效"
+err.unauthorized: "未授权"
+err.forbidden: "禁止访问"
+err.not_found: "资源不存在"
+err.internal: "服务器内部错误"
+err.too_many_requests: "请求过于频繁"
+err.service_unavailable: "服务暂时不可用"
+err.timeout: "请求超时"
+
+# 用户相关
+user.not_found: "用户不存在"
+user.already_exists: "用户已存在"
+user.create_success: "用户创建成功"
+user.update_success: "用户更新成功"
+user.delete_success: "用户删除成功"
+
+# 认证相关
+auth.token_expired: "令牌已过期"
+auth.token_invalid: "令牌无效"
+auth.login_success: "登录成功"
+auth.logout_success: "登出成功"
+
+# 验证相关
+validate.required: "%s 不能为空"
+validate.email: "%s 必须是有效的邮箱"
+validate.min: "%s 最小值为 %s"
+validate.max: "%s 最大值为 %s"
+validate.length: "%s 长度必须为 %s"

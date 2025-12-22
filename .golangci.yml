@@ -1,0 +1,113 @@
+# golangci-lint 配置文件
+# 文档: https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  tests: true
+
+issues:
+  exclude-dirs:
+    - vendor
+    - docs
+  exclude-rules:
+    # 测试文件放宽规则
+    - path: _test\.go
+      linters:
+        - dupl
+        - gosec
+        - errcheck
+
+    # 生成的文件跳过
+    - path: docs/
+      linters:
+        - all
+
+  max-issues-per-linter: 50
+  max-same-issues: 10
+  new: false
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    # 默认启用
+    - errcheck      # 检查未处理的错误
+    - gosimple      # 简化代码建议
+    - govet         # 检查可疑代码
+    - ineffassign   # 检查无效赋值
+    - staticcheck   # 静态分析
+    - unused        # 检查未使用的代码
+
+    # 额外启用
+    - bodyclose     # HTTP response body 是否关闭
+    - dupl          # 代码重复检测
+    - gocyclo       # 圈复杂度检查
+    - gofmt         # 格式化检查
+    - goimports     # import 排序检查
+    - gosec         # 安全问题检查
+    - misspell      # 拼写错误检查
+    - nakedret      # 裸返回检查
+    - prealloc      # 切片预分配建议
+    - unconvert     # 不必要的类型转换
+    - unparam       # 未使用的参数
+    - whitespace    # 空白符检查
+
+  disable:
+    - depguard      # 依赖检查（需要额外配置）
+    - funlen        # 函数长度（可能过于严格）
+    - gochecknoglobals # 全局变量检查（Go 常用模式）
+    - lll           # 行长度（可能过于严格）
+    - wsl           # 空行规则（风格偏好）
+
+linters-settings:
+  errcheck:
+    check-type-assertions: false  # 类型断言通常已有 panic recovery
+    check-blank: false            # 允许 _ = xxx 忽略错误（缓存等非关键操作）
+    exclude-functions:
+      - (io.Closer).Close
+      - (net/http.ResponseWriter).Write
+      - (*go.uber.org/zap.Logger).Sync
+      - (*go.uber.org/zap.SugaredLogger).Sync
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  govet:
+    enable:
+      - shadow
+
+  goimports:
+    local-prefixes: github.com/test-tt
+
+  gosec:
+    excludes:
+      - G104 # 忽略未检查的错误（已有 errcheck）
+      - G304 # 文件路径注入（模板项目允许）
+
+  misspell:
+    locale: US
+
+  nakedret:
+    max-func-lines: 30
+
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: true
+
+  unparam:
+    check-exported: false
+
+severity:
+  default-severity: warning
+  rules:
+    - linters:
+        - gosec
+      severity: error
