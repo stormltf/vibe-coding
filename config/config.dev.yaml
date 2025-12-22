@@ -24,9 +24,9 @@ redis:
   db: 0
   pool_size: 10
   min_idle_conns: 5
-  dial_timeout: 3s
-  read_timeout: 1s
-  write_timeout: 1s
+  dial_timeout: 5s    # 连接超时
+  read_timeout: 3s    # 读超时（调整为 3s，避免网络抖动导致失败）
+  write_timeout: 3s   # 写超时（调整为 3s）
 
 log:
   level: debug  # 开发环境使用 debug 级别

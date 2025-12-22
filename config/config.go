@@ -135,9 +135,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("redis.db", 0)
 	v.SetDefault("redis.pool_size", 100)
 	v.SetDefault("redis.min_idle_conns", 20)
-	v.SetDefault("redis.dial_timeout", "3s")
-	v.SetDefault("redis.read_timeout", "1s")
-	v.SetDefault("redis.write_timeout", "1s")
+	v.SetDefault("redis.dial_timeout", "5s")  // 连接超时
+	v.SetDefault("redis.read_timeout", "3s")  // 读超时（适当放宽，避免网络抖动）
+	v.SetDefault("redis.write_timeout", "3s") // 写超时
 
 	// Log
 	v.SetDefault("log.level", "info")
@@ -169,4 +169,87 @@ func (c *Config) IsDev() bool {
 // IsProd 是否生产环境
 func (c *Config) IsProd() bool {
 	return c.Env == "prod"
+}
+
+// 默认不安全的 JWT Secret
+const defaultInsecureSecret = "your-secret-key-change-in-production"
+
+// Validate 验证配置的有效性
+func Validate(cfg *Config) error {
+	var errs []string
+
+	// 验证 JWT Secret
+	if cfg.JWT != nil {
+		if cfg.JWT.Secret == "" {
+			errs = append(errs, "jwt.secret is required")
+		} else if cfg.JWT.Secret == defaultInsecureSecret {
+			if cfg.IsProd() {
+				errs = append(errs, "jwt.secret must be changed in production (use APP_JWT_SECRET env var)")
+			}
+			// 开发环境仅警告，不阻止启动
+		} else if len(cfg.JWT.Secret) < 32 {
+			if cfg.IsProd() {
+				errs = append(errs, "jwt.secret must be at least 32 characters in production")
+			}
+		}
+	}
+
+	// 验证 MySQL 配置
+	if cfg.MySQL != nil {
+		if cfg.MySQL.MaxOpenConns > 500 {
+			errs = append(errs, "mysql.max_open_conns should not exceed 500")
+		}
+		if cfg.MySQL.MaxIdleConns > cfg.MySQL.MaxOpenConns {
+			errs = append(errs, "mysql.max_idle_conns should not exceed max_open_conns")
+		}
+		if cfg.MySQL.ConnMaxLifetime < 0 {
+			errs = append(errs, "mysql.conn_max_lifetime must be positive")
+		}
+	}
+
+	// 验证 Redis 配置
+	if cfg.Redis != nil {
+		if cfg.Redis.PoolSize > 1000 {
+			errs = append(errs, "redis.pool_size should not exceed 1000")
+		}
+		if cfg.Redis.DialTimeout <= 0 {
+			errs = append(errs, "redis.dial_timeout must be positive")
+		}
+		if cfg.Redis.ReadTimeout <= 0 {
+			errs = append(errs, "redis.read_timeout must be positive")
+		}
+		if cfg.Redis.WriteTimeout <= 0 {
+			errs = append(errs, "redis.write_timeout must be positive")
+		}
+	}
+
+	// 验证 Server 配置
+	if cfg.Server != nil {
+		if cfg.Server.Port <= 0 || cfg.Server.Port > 65535 {
+			errs = append(errs, "server.port must be between 1 and 65535")
+		}
+	}
+
+	// 验证 RateLimit 配置
+	if cfg.RateLimit != nil {
+		if cfg.RateLimit.Rate <= 0 {
+			errs = append(errs, "ratelimit.rate must be positive")
+		}
+		if cfg.RateLimit.Burst <= 0 {
+			errs = append(errs, "ratelimit.burst must be positive")
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("config validation failed: %v", errs)
+	}
+
+	return nil
+}
+
+// MustValidate 验证配置，失败则 panic
+func MustValidate(cfg *Config) {
+	if err := Validate(cfg); err != nil {
+		panic(err)
+	}
 }

@@ -85,7 +85,9 @@ func (s *UserService) GetByID(ctx context.Context, id uint64) (*model.User, erro
 		// 写入 Redis 缓存
 		if cache.RDB != nil {
 			data, _ := sonic.MarshalString(user)
-			_ = cache.Set(ctx, cacheKey, data, cacheTTL)
+			if err := cache.Set(ctx, cacheKey, data, cacheTTL); err != nil {
+				logger.WarnCtxf(ctx, "failed to cache user", "key", cacheKey, "error", err)
+			}
 		}
 
 		// 写入本地缓存
@@ -123,7 +125,9 @@ func (s *UserService) GetAll(ctx context.Context) ([]model.User, error) {
 	// 写入缓存
 	if cache.RDB != nil {
 		data, _ := sonic.MarshalString(users)
-		_ = cache.Set(ctx, userListCacheKey, data, cacheTTL)
+		if err := cache.Set(ctx, userListCacheKey, data, cacheTTL); err != nil {
+			logger.WarnCtxf(ctx, "failed to cache user list", "key", userListCacheKey, "error", err)
+		}
 	}
 
 	return users, nil
@@ -185,7 +189,9 @@ func (s *UserService) GetPage(ctx context.Context, offset, limit int) ([]model.U
 		// 写入 Redis 缓存
 		if cache.RDB != nil {
 			data, _ := sonic.MarshalString(listResult)
-			_ = cache.Set(ctx, cacheKey, data, cacheTTL)
+			if err := cache.Set(ctx, cacheKey, data, cacheTTL); err != nil {
+				logger.WarnCtxf(ctx, "failed to cache user page", "key", cacheKey, "error", err)
+			}
 		}
 
 		// 写入本地缓存
@@ -243,7 +249,9 @@ func (s *UserService) GetByIDs(ctx context.Context, ids []uint64) ([]model.User,
 			for _, user := range dbUsers {
 				cacheKey := fmt.Sprintf(userCacheKey, user.ID)
 				data, _ := sonic.MarshalString(user)
-				_ = cache.Set(ctx, cacheKey, data, cacheTTL)
+				if err := cache.Set(ctx, cacheKey, data, cacheTTL); err != nil {
+					logger.WarnCtxf(ctx, "failed to cache user in batch", "key", cacheKey, "error", err)
+				}
 			}
 		}
 
@@ -301,16 +309,33 @@ func (s *UserService) invalidatePageCache(ctx context.Context) {
 		return
 	}
 
-	// 使用 pattern 删除所有分页缓存
+	// 使用 SCAN 替代 KEYS，避免阻塞 Redis
 	pattern := "users:page:*"
-	keys, err := cache.RDB.Keys(ctx, pattern).Result()
-	if err != nil {
-		logger.WarnCtxf(ctx, "failed to get page cache keys", "error", err)
-		return
+	var cursor uint64
+	var keys []string
+	const scanCount = 100 // 每次扫描的数量
+
+	for {
+		var err error
+		var batch []string
+		batch, cursor, err = cache.RDB.Scan(ctx, cursor, pattern, scanCount).Result()
+		if err != nil {
+			logger.WarnCtxf(ctx, "failed to scan page cache keys", "error", err)
+			break
+		}
+		keys = append(keys, batch...)
+
+		if cursor == 0 {
+			break
+		}
 	}
 
 	if len(keys) > 0 {
-		_ = cache.Del(ctx, keys...)
+		if err := cache.Del(ctx, keys...); err != nil {
+			logger.WarnCtxf(ctx, "failed to delete page cache keys", "count", len(keys), "error", err)
+		}
 	}
-	_ = cache.Del(ctx, userListCacheKey, userCountCacheKey)
+	if err := cache.Del(ctx, userListCacheKey, userCountCacheKey); err != nil {
+		logger.WarnCtxf(ctx, "failed to delete list/count cache", "error", err)
+	}
 }

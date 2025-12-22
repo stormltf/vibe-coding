@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"net/url"
+	"os"
 	"sync"
 
 	"github.com/cloudwego/hertz/pkg/app"
@@ -13,6 +14,7 @@ import (
 	"github.com/hertz-contrib/swagger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
+	"github.com/test-tt/config"
 	"github.com/test-tt/internal/handler"
 	"github.com/test-tt/internal/middleware"
 	"github.com/test-tt/pkg/jwt"
@@ -34,15 +36,25 @@ func Register(h *server.Hertz) {
 
 	// 健康检查
 	h.GET("/ping", pingHandler.Ping)
+	h.GET("/health", pingHandler.Health) // 详细健康检查
 
-	// Prometheus 指标
-	h.GET("/metrics", prometheusHandler())
+	// Prometheus 指标（生产环境建议添加认证）
+	if config.Cfg != nil && config.Cfg.IsProd() {
+		h.GET("/metrics", debugAuthMiddleware(), prometheusHandler())
+	} else {
+		h.GET("/metrics", prometheusHandler())
+	}
 
-	// Swagger API 文档
-	h.GET("/swagger/*any", swagger.WrapHandler(swaggerFiles.Handler))
+	// Swagger API 文档（仅开发环境）
+	if config.Cfg == nil || config.Cfg.IsDev() {
+		h.GET("/swagger/*any", swagger.WrapHandler(swaggerFiles.Handler))
+	}
 
-	// pprof 性能分析（仅开发/调试环境启用）
+	// pprof 性能分析（开发环境直接访问，生产环境需要认证）
 	pprofGroup := h.Group("/debug/pprof")
+	if config.Cfg != nil && config.Cfg.IsProd() {
+		pprofGroup.Use(debugAuthMiddleware())
+	}
 	{
 		pprofGroup.GET("/", pprofHandler(pprof.Index))
 		pprofGroup.GET("/cmdline", pprofHandler(pprof.Cmdline))
@@ -170,5 +182,46 @@ func pprofHandler(h http.HandlerFunc) app.HandlerFunc {
 			RequestURI: string(c.URI().RequestURI()),
 			URL:        u,
 		})
+	}
+}
+
+// debugAuthMiddleware 调试端点认证中间件
+// 用于保护 pprof 和 metrics 等敏感端点
+// 通过环境变量 DEBUG_AUTH_TOKEN 设置访问令牌
+func debugAuthMiddleware() app.HandlerFunc {
+	token := os.Getenv("DEBUG_AUTH_TOKEN")
+	tokenRequired := token != "" // 如果设置了 token 则必须验证
+
+	return func(ctx context.Context, c *app.RequestContext) {
+		// 如果没有配置 token，生产环境拒绝访问
+		if !tokenRequired {
+			c.AbortWithStatusJSON(http.StatusForbidden, map[string]interface{}{
+				"code":    4003,
+				"message": "debug endpoints disabled: DEBUG_AUTH_TOKEN not configured",
+			})
+			return
+		}
+
+		// 检查 Authorization header
+		auth := string(c.GetHeader("Authorization"))
+		if auth == "" {
+			// 也支持 query parameter
+			auth = c.Query("token")
+		}
+
+		// Bearer token 格式
+		if len(auth) > 7 && auth[:7] == "Bearer " {
+			auth = auth[7:]
+		}
+
+		if auth != token {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, map[string]interface{}{
+				"code":    4001,
+				"message": "unauthorized: invalid or missing debug token",
+			})
+			return
+		}
+
+		c.Next(ctx)
 	}
 }

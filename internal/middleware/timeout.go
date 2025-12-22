@@ -26,6 +26,8 @@ func DefaultTimeoutConfig() *TimeoutConfig {
 }
 
 // Timeout 请求超时中间件
+// 注意：此中间件通过 context 传递超时信号，业务代码需要检查 ctx.Done() 来响应超时
+// 超时后会立即返回响应，但底层 handler 可能仍在执行（需要业务代码配合检查 context）
 func Timeout(cfg *TimeoutConfig) app.HandlerFunc {
 	if cfg == nil {
 		cfg = DefaultTimeoutConfig()
@@ -40,8 +42,16 @@ func Timeout(cfg *TimeoutConfig) app.HandlerFunc {
 		done := make(chan struct{})
 
 		go func() {
+			defer func() {
+				// 防止 panic 导致 goroutine 泄露
+				if r := recover(); r != nil {
+					// 已有 recovery 中间件处理，这里只需确保 channel 关闭
+				}
+				close(done)
+			}()
+
+			// 执行下一个 handler
 			c.Next(ctx)
-			close(done)
 		}()
 
 		select {
@@ -49,10 +59,16 @@ func Timeout(cfg *TimeoutConfig) app.HandlerFunc {
 			// 正常完成
 			return
 		case <-ctx.Done():
-			// 超时
+			// 超时处理
 			if ctx.Err() == context.DeadlineExceeded {
-				c.AbortWithStatusJSON(http.StatusRequestTimeout, cfg.Response)
+				// 只有在响应未开始写入时才返回超时响应
+				if !c.Response.HasBodyBytes() {
+					c.AbortWithStatusJSON(http.StatusRequestTimeout, cfg.Response)
+				}
 			}
+			// 注意：此时 goroutine 可能仍在执行，但已通过 context 发送取消信号
+			// 业务代码应该检查 ctx.Done() 并尽快退出
+			return
 		}
 	}
 }
@@ -66,4 +82,14 @@ func TimeoutWithDuration(timeout time.Duration) app.HandlerFunc {
 			"message": "request timeout",
 		},
 	})
+}
+
+// IsTimeout 检查 context 是否已超时（供业务代码使用）
+func IsTimeout(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		return ctx.Err() == context.DeadlineExceeded
+	default:
+		return false
+	}
 }

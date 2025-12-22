@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/test-tt/config"
+	"github.com/test-tt/internal/middleware"
 	"github.com/test-tt/internal/router"
 	"github.com/test-tt/pkg/cache"
 	"github.com/test-tt/pkg/database"
@@ -54,6 +56,11 @@ func main() {
 		panic(fmt.Sprintf("load config failed: %v", err))
 	}
 
+	// 验证配置
+	if err := config.Validate(cfg); err != nil {
+		panic(fmt.Sprintf("config validation failed: %v", err))
+	}
+
 	// 初始化日志
 	if err := logger.Init(&logger.Config{
 		Level:      cfg.Log.Level,
@@ -68,9 +75,18 @@ func main() {
 	}
 	defer logger.Sync()
 
-	logger.Infof("starting server", "config", configPath)
+	logger.Infof("starting server", "config", configPath, "env", cfg.Env)
+
+	// 资源清理函数列表（按逆序执行）
+	var cleanups []func()
+	defer func() {
+		for i := len(cleanups) - 1; i >= 0; i-- {
+			cleanups[i]()
+		}
+	}()
 
 	// 初始化 MySQL
+	mysqlRequired := cfg.IsProd() // 生产环境必须连接 MySQL
 	if err := database.Init(&database.Config{
 		Host:            cfg.MySQL.Host,
 		Port:            cfg.MySQL.Port,
@@ -83,13 +99,20 @@ func main() {
 		ConnMaxLifetime: cfg.MySQL.ConnMaxLifetime,
 		LogLevel:        cfg.MySQL.LogLevel,
 	}); err != nil {
-		logger.Warnf("init mysql failed", "error", err)
+		if mysqlRequired {
+			panic(fmt.Sprintf("init mysql failed (required in production): %v", err))
+		}
+		logger.Warnf("init mysql failed (service will run without database)", "error", err)
 	} else {
 		logger.Info("MySQL connected")
-		defer database.Close()
+		cleanups = append(cleanups, func() {
+			logger.Info("closing MySQL connection...")
+			database.Close()
+		})
 	}
 
 	// 初始化 Redis
+	redisRequired := cfg.IsProd() // 生产环境必须连接 Redis
 	if err := cache.Init(&cache.Config{
 		Host:         cfg.Redis.Host,
 		Port:         cfg.Redis.Port,
@@ -101,10 +124,16 @@ func main() {
 		ReadTimeout:  cfg.Redis.ReadTimeout,
 		WriteTimeout: cfg.Redis.WriteTimeout,
 	}); err != nil {
-		logger.Warnf("init redis failed", "error", err)
+		if redisRequired {
+			panic(fmt.Sprintf("init redis failed (required in production): %v", err))
+		}
+		logger.Warnf("init redis failed (service will run without cache)", "error", err)
 	} else {
 		logger.Info("Redis connected")
-		defer cache.Close()
+		cleanups = append(cleanups, func() {
+			logger.Info("closing Redis connection...")
+			cache.Close()
+		})
 	}
 
 	// 初始化本地缓存（L1 缓存）
@@ -112,39 +141,61 @@ func main() {
 		logger.Warnf("init local cache failed", "error", err)
 	} else {
 		logger.Info("LocalCache initialized (64MB)")
+		cleanups = append(cleanups, func() {
+			logger.Info("closing local cache...")
+			if lc := cache.GetLocalCache(); lc != nil {
+				lc.Close()
+			}
+		})
 	}
 
 	// 初始化 HTTP 服务器
 	h := server.Default(
 		server.WithHostPorts(fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)),
 		server.WithExitWaitTime(5*time.Second),
-		server.WithMaxRequestBodySize(4*1024*1024),          // 4MB 请求体限制
-		server.WithReadTimeout(30*time.Second),               // 读超时
-		server.WithWriteTimeout(30*time.Second),              // 写超时
-		server.WithIdleTimeout(120*time.Second),              // 空闲连接超时
+		server.WithMaxRequestBodySize(4*1024*1024), // 4MB 请求体限制
+		server.WithReadTimeout(30*time.Second),     // 读超时
+		server.WithWriteTimeout(30*time.Second),    // 写超时
+		server.WithIdleTimeout(120*time.Second),    // 空闲连接超时
 	)
 
 	// 注册路由
 	router.Register(h)
 
+	// 注册限流器清理
+	cleanups = append(cleanups, func() {
+		logger.Info("stopping rate limiters...")
+		middleware.StopAllRateLimiters()
+	})
+
 	// 优雅关闭
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		quit := make(chan os.Signal, 1)
+		defer wg.Done()
+		// 使用缓冲区 2 以捕获多个信号
+		quit := make(chan os.Signal, 2)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		<-quit
+		sig := <-quit
 
-		logger.Info("shutting down server...")
+		logger.Infof("received shutdown signal", "signal", sig.String())
+		logger.Info("shutting down server (waiting for active requests)...")
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		// 增加超时时间到 30 秒，给活跃请求更多时间完成
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		if err := h.Shutdown(ctx); err != nil {
 			logger.Errorf("server shutdown error", "error", err)
+		} else {
+			logger.Info("server shutdown completed gracefully")
 		}
-
-		logger.Info("server stopped")
 	}()
 
 	logger.Infof("server started", "host", cfg.Server.Host, "port", cfg.Server.Port)
 	h.Spin()
+
+	// 等待优雅关闭完成
+	wg.Wait()
+	logger.Info("all resources cleaned up, server stopped")
 }
