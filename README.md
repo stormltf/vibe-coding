@@ -410,10 +410,20 @@ make build && ./build/test-tt
 # Docker 方式
 make docker-down
 
-# 本地进程方式
+# 停止 Go 后端
 pkill -f test-tt
 # 或
 kill $(lsof -t -i:8888)
+
+# 停止 Agent Server
+pkill -f "node.*server.js"
+# 或
+kill $(lsof -t -i:3001)
+
+# 一键停止所有服务（Go 后端 + Agent Server）
+pkill -f test-tt; pkill -f "node.*server.js"
+# 或
+kill $(lsof -t -i:8888) 2>/dev/null; kill $(lsof -t -i:3001) 2>/dev/null
 ```
 
 ## API 接口
@@ -774,12 +784,33 @@ go tool pprof http://localhost:8888/debug/pprof/profile?seconds=30
 
 ### 端口被占用
 
+**Go 后端（端口 8888）：**
 ```bash
 # 查看占用端口的进程
 lsof -i:8888
 
 # 杀死进程
 kill -9 <PID>
+
+# 或者直接一条命令
+kill -9 $(lsof -t -i:8888)
+```
+
+**Agent Server（端口 3001）：**
+```bash
+# 查看占用端口的进程
+lsof -i:3001
+
+# 杀死进程
+kill -9 <PID>
+
+# 或者直接一条命令
+kill -9 $(lsof -t -i:3001)
+```
+
+**同时释放两个端口：**
+```bash
+kill -9 $(lsof -t -i:8888) 2>/dev/null; kill -9 $(lsof -t -i:3001) 2>/dev/null
 ```
 
 ### 数据库连接失败
