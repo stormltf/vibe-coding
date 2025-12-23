@@ -3,9 +3,11 @@ package handler
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
 
+	"github.com/test-tt/internal/middleware"
 	"github.com/test-tt/internal/model"
 	"github.com/test-tt/internal/service"
 	"github.com/test-tt/pkg/errcode"
@@ -56,20 +58,31 @@ func (h *UserHandler) GetUserByID(ctx context.Context, c *app.RequestContext) {
 
 // GetUsers godoc
 // @Summary      获取用户列表
-// @Description  分页获取用户列表
+// @Description  分页获取用户列表，支持按名称或邮箱搜索
 // @Tags         用户管理
 // @Accept       json
 // @Produce      json
-// @Param        page       query     int  false  "页码"      default(1)
-// @Param        page_size  query     int  false  "每页数量"  default(10)
+// @Param        page       query     int     false  "页码"      default(1)
+// @Param        page_size  query     int     false  "每页数量"  default(10)
+// @Param        keyword    query     string  false  "搜索关键词（名称或邮箱）"
 // @Success      200  {object}  response.Response{data=pagination.PageResult}
 // @Failure      500  {object}  response.Response
 // @Router       /users [get]
 func (h *UserHandler) GetUsers(ctx context.Context, c *app.RequestContext) {
 	// 获取分页参数
 	page := pagination.GetFromQuery(c)
+	keyword := strings.TrimSpace(c.Query("keyword"))
 
-	users, total, err := h.userService.GetPage(ctx, page.Offset(), page.PageSize)
+	var users []model.User
+	var total int64
+	var err error
+
+	if keyword != "" {
+		users, total, err = h.userService.Search(ctx, keyword, page.Offset(), page.PageSize)
+	} else {
+		users, total, err = h.userService.GetPage(ctx, page.Offset(), page.PageSize)
+	}
+
 	if err != nil {
 		logger.ErrorCtxf(ctx, "failed to get users", "error", err)
 		response.Fail(c, errcode.ErrDatabase)
@@ -136,7 +149,7 @@ type UpdateUserRequest struct {
 
 // UpdateUser godoc
 // @Summary      更新用户
-// @Description  更新用户信息
+// @Description  更新用户信息（只能更新自己的信息）
 // @Tags         用户管理
 // @Accept       json
 // @Produce      json
@@ -144,6 +157,7 @@ type UpdateUserRequest struct {
 // @Param        request  body      UpdateUserRequest  true  "用户信息"
 // @Success      200      {object}  response.Response{data=model.User}
 // @Failure      400      {object}  response.Response
+// @Failure      403      {object}  response.Response
 // @Failure      500      {object}  response.Response
 // @Security     Bearer
 // @Router       /users/{id} [put]
@@ -152,6 +166,17 @@ func (h *UserHandler) UpdateUser(ctx context.Context, c *app.RequestContext) {
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		response.Fail(c, errcode.ErrInvalidUserID)
+		return
+	}
+
+	// 安全检查：只能更新自己的信息
+	currentUserID := middleware.GetUserIDFromContext(c)
+	if currentUserID == 0 {
+		response.Fail(c, errcode.ErrUnauthorized)
+		return
+	}
+	if id != currentUserID {
+		response.Fail(c, errcode.ErrForbidden.WithMessage("can only update your own profile"))
 		return
 	}
 
@@ -185,13 +210,14 @@ func (h *UserHandler) UpdateUser(ctx context.Context, c *app.RequestContext) {
 
 // DeleteUser godoc
 // @Summary      删除用户
-// @Description  根据用户ID删除用户
+// @Description  根据用户ID删除用户（只能删除自己的账号）
 // @Tags         用户管理
 // @Accept       json
 // @Produce      json
 // @Param        id   path      int  true  "用户ID"
 // @Success      200  {object}  response.Response
 // @Failure      400  {object}  response.Response
+// @Failure      403  {object}  response.Response
 // @Failure      500  {object}  response.Response
 // @Security     Bearer
 // @Router       /users/{id} [delete]
@@ -200,6 +226,17 @@ func (h *UserHandler) DeleteUser(ctx context.Context, c *app.RequestContext) {
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		response.Fail(c, errcode.ErrInvalidUserID)
+		return
+	}
+
+	// 安全检查：只能删除自己的账号
+	currentUserID := middleware.GetUserIDFromContext(c)
+	if currentUserID == 0 {
+		response.Fail(c, errcode.ErrUnauthorized)
+		return
+	}
+	if id != currentUserID {
+		response.Fail(c, errcode.ErrForbidden.WithMessage("can only delete your own account"))
 		return
 	}
 

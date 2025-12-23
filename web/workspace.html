@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace - Vibe Coding</title>
+    <link rel="icon" href="/static/assets/favicon.svg" type="image/svg+xml">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-dark);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 布局 */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 顶部导航 */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            height: 56px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+        }
+        .project-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .header-center {
+            display: flex;
+            gap: 4px;
+            background: rgba(0,0,0,0.3);
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .view-tab {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .view-tab:hover { color: var(--text); }
+        .view-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 20px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .user-btn:hover { background: rgba(255,255,255,0.15); }
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .user-menu {
+            position: relative;
+        }
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        .user-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .dropdown-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .dropdown-header .name { font-weight: 600; }
+        .dropdown-header .email { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+        }
+        .dropdown-item svg { width: 18px; height: 18px; }
+
+        /* 主内容区 */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 左侧聊天面板 */
+        .chat-panel {
+            width: 480px;
+            min-width: 360px;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+            border-right: 1px solid var(--border);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* 欢迎界面 */
+        .welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+        }
+        .welcome-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .welcome-icon svg { width: 40px; height: 40px; color: white; }
+        .welcome h2 {
+            font-size: 24px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .welcome p { color: var(--text-muted); margin-bottom: 32px; }
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .suggestion {
+            padding: 10px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .suggestion:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        /* 消息样式 */
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .message-avatar.ai {
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+        }
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .message-name { font-weight: 600; font-size: 14px; }
+        .message-time { font-size: 12px; color: var(--text-muted); }
+        .message-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text);
+        }
+        .message-text p { margin-bottom: 12px; }
+        .message-text p:last-child { margin-bottom: 0; }
+        .message-text code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+        .message-text pre {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .message-text pre code {
+            background: none;
+            padding: 0;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        /* 输入区域 */
+        .chat-input-area {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            transition: all 0.2s;
+        }
+        .input-wrapper:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .chat-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            max-height: 120px;
+            outline: none;
+        }
+        .chat-input::placeholder { color: var(--text-muted); }
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--primary);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .send-btn:hover { background: var(--primary-dark); transform: scale(1.05); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .send-btn svg { width: 20px; height: 20px; }
+
+        /* 右侧预览面板 */
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a2e;
+        }
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+        .preview-tabs {
+            display: flex;
+            gap: 4px;
+        }
+        .preview-tab {
+            padding: 6px 12px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preview-tab:hover { color: var(--text); }
+        .preview-tab.active {
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+        }
+        .preview-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .preview-btn {
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preview-btn:hover { background: rgba(255,255,255,0.15); color: var(--text); }
+        .preview-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+        }
+        .preview-placeholder svg {
+            width: 64px;
+            height: 64px;
+            opacity: 0.3;
+            margin-bottom: 16px;
+        }
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        .code-view {
+            height: 100%;
+            overflow: auto;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #e2e8f0;
+            display: none;
+        }
+        .code-view.active { display: block; }
+        .preview-frame-container { display: none; height: 100%; }
+        .preview-frame-container.active { display: block; }
+
+        /* 代码高亮 */
+        .code-keyword { color: #f472b6; }
+        .code-string { color: #34d399; }
+        .code-comment { color: #64748b; }
+        .code-tag { color: #60a5fa; }
+        .code-attr { color: #a78bfa; }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .toast {
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--error); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* 分隔条 */
+        .resizer {
+            width: 4px;
+            background: var(--border);
+            cursor: col-resize;
+            transition: background 0.2s;
+        }
+        .resizer:hover { background: var(--primary); }
+
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-header h3 { font-size: 18px; }
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+        .modal-body { padding: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="header-left">
+                <a href="/" class="back-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <span class="project-name">New Project</span>
+            </div>
+            <div class="header-center">
+                <button class="view-tab active" data-view="preview">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                    Preview
+                </button>
+                <button class="view-tab" data-view="code">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"/>
+                        <polyline points="8 6 2 12 8 18"/>
+                    </svg>
+                    Code
+                </button>
+            </div>
+            <div class="header-right">
+                <div class="user-menu">
+                    <button class="user-btn" id="user-btn">
+                        <div class="user-avatar" id="user-avatar">U</div>
+                        <span id="user-name">User</span>
+                    </button>
+                    <div class="user-dropdown" id="user-dropdown">
+                        <div class="dropdown-header">
+                            <div class="name" id="dropdown-name">User</div>
+                            <div class="email" id="dropdown-email">user@email.com</div>
+                        </div>
+                        <a href="/" class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            </svg>
+                            Home
+                        </a>
+                        <button class="dropdown-item" id="btn-profile">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            Edit Profile
+                        </button>
+                        <button class="dropdown-item" id="btn-logout">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容 -->
+        <main class="main-content">
+            <!-- 左侧聊天面板 -->
+            <div class="chat-panel">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="welcome" id="welcome">
+                        <div class="welcome-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5"/>
+                                <path d="M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <h2>Let's build something amazing</h2>
+                        <p>Describe what you want to create, and I'll help you build it.</p>
+                        <div class="suggestions">
+                            <button class="suggestion" data-prompt="Create a landing page for a SaaS product with hero section and pricing">Landing page</button>
+                            <button class="suggestion" data-prompt="Build a login form with email and password validation">Login form</button>
+                            <button class="suggestion" data-prompt="Design a dashboard with sidebar navigation and charts">Dashboard</button>
+                            <button class="suggestion" data-prompt="Create a blog post card component with image and tags">Blog card</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="input-wrapper">
+                        <textarea class="chat-input" id="chat-input" placeholder="Describe what you want to create..." rows="1"></textarea>
+                        <button class="send-btn" id="send-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分隔条 -->
+            <div class="resizer" id="resizer"></div>
+
+            <!-- 右侧预览面板 -->
+            <div class="preview-panel">
+                <div class="preview-header">
+                    <div class="preview-tabs">
+                        <button class="preview-tab active" data-file="index.html">index.html</button>
+                        <button class="preview-tab" data-file="style.css">style.css</button>
+                    </div>
+                    <div class="preview-actions">
+                        <button class="preview-btn" id="btn-copy">Copy code</button>
+                        <button class="preview-btn" id="btn-download">Download</button>
+                    </div>
+                </div>
+                <div class="preview-content">
+                    <div class="preview-placeholder" id="preview-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18"/>
+                            <path d="M9 21V9"/>
+                        </svg>
+                        <p>Your creation will appear here</p>
+                    </div>
+                    <div class="preview-frame-container" id="preview-frame-container">
+                        <iframe class="preview-iframe" id="preview-iframe"></iframe>
+                    </div>
+                    <div class="code-view" id="code-view"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 个人信息弹窗 -->
+    <div class="modal-overlay" id="profile-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Profile</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="profile-name" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="profile-email" placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Age</label>
+                        <input type="number" id="profile-age" placeholder="Your age">
+                    </div>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script>
+        // ========== 状态管理 ==========
+        const state = {
+            messages: [],
+            currentCode: { html: '', css: '' },
+            currentView: 'preview',
+            isGenerating: false
+        };
+
+        // ========== UI 工具 ==========
+        const UI = {
+            toast(msg, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = msg;
+                container.appendChild(toast);
+                setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+            },
+            success(msg) { this.toast(msg, 'success'); },
+            error(msg) { this.toast(msg, 'error'); }
+        };
+
+        // ========== Agent API 配置 ==========
+        const AGENT_API_URL = 'http://localhost:3001';
+
+        // ========== Agent API ==========
+        // API 调用逻辑已整合到 handleSend 和相关函数中
+
+        // ========== Fallback 模板（当 Agent 不可用时） ==========
+        const fallbackTemplates = {
+            'landing': {
+                html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Landing Page</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; }
+        .logo { font-size: 24px; font-weight: 700; color: #6366f1; }
+        .nav-links { display: flex; gap: 30px; align-items: center; }
+        .nav-links a { text-decoration: none; color: #475569; }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .hero { text-align: center; padding: 100px 20px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
+        .hero h1 { font-size: 48px; color: #1e293b; margin-bottom: 20px; }
+        .hero p { font-size: 20px; color: #64748b; margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto; }
+        .features { padding: 80px 40px; text-align: center; }
+        .features h2 { font-size: 36px; margin-bottom: 50px; color: #1e293b; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1000px; margin: 0 auto; }
+        .feature-card { padding: 40px 30px; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .feature-icon { font-size: 40px; margin-bottom: 20px; }
+        .feature-card h3 { font-size: 20px; margin-bottom: 10px; color: #1e293b; }
+        .feature-card p { color: #64748b; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">SaaSify</div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <button class="btn-primary">Get Started</button>
+        </div>
+    </nav>
+    <section class="hero">
+        <h1>Build Better Products, Faster</h1>
+        <p>The all-in-one platform for modern teams to collaborate, build, and ship amazing products.</p>
+        <button class="btn-primary">Start Free Trial</button>
+    </section>
+    <section class="features" id="features">
+        <h2>Everything you need</h2>
+        <div class="feature-grid">
+            <div class="feature-card"><div class="feature-icon">⚡</div><h3>Lightning Fast</h3><p>Optimized for speed.</p></div>
+            <div class="feature-card"><div class="feature-icon">🔒</div><h3>Secure</h3><p>Enterprise-grade security.</p></div>
+            <div class="feature-card"><div class="feature-icon">📊</div><h3>Analytics</h3><p>Deep insights.</p></div>
+        </div>
+    </section>
+</body>
+</html>`,
+                css: '',
+                message: "I've created a modern SaaS landing page with navigation, hero section, and features."
+            },
+            'login': {
+                html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: white; border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .login-header { text-align: center; margin-bottom: 30px; }
+        .login-header h1 { font-size: 28px; color: #1e293b; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 14px; color: #475569; margin-bottom: 8px; }
+        .form-group input { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; }
+        .form-group input:focus { outline: none; border-color: #6366f1; }
+        .btn-submit { width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header"><h1>Welcome back</h1></div>
+        <form>
+            <div class="form-group"><label>Email</label><input type="email" placeholder="you@example.com"></div>
+            <div class="form-group"><label>Password</label><input type="password" placeholder="Enter password"></div>
+            <button type="submit" class="btn-submit">Sign In</button>
+        </form>
+    </div>
+</body>
+</html>`,
+                css: '',
+                message: "I've created a login form with email and password fields."
+            },
+            'dashboard': {
+                html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: #f1f5f9; }
+        .dashboard { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: #1e293b; color: white; padding: 20px; }
+        .logo { font-size: 24px; font-weight: 700; padding: 20px 0; border-bottom: 1px solid #334155; }
+        .nav-item { display: block; padding: 14px 16px; color: #94a3b8; text-decoration: none; border-radius: 10px; margin: 8px 0; }
+        .nav-item.active { background: #334155; color: white; }
+        .main-content { flex: 1; padding: 30px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .stat-card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .stat-value { font-size: 28px; font-weight: 700; color: #1e293b; }
+        .stat-label { color: #64748b; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="logo">Dashboard</div>
+            <a href="#" class="nav-item active">📊 Overview</a>
+            <a href="#" class="nav-item">📈 Analytics</a>
+            <a href="#" class="nav-item">👥 Users</a>
+        </aside>
+        <main class="main-content">
+            <h1 style="margin-bottom: 30px; color: #1e293b;">Overview</h1>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">2,543</div><div class="stat-label">Users</div></div>
+                <div class="stat-card"><div class="stat-value">$45,234</div><div class="stat-label">Revenue</div></div>
+                <div class="stat-card"><div class="stat-value">1,234</div><div class="stat-label">Orders</div></div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>`,
+                css: '',
+                message: "I've created a dashboard with sidebar and stats cards."
+            },
+            'blog': {
+                html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Card</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px; }
+        .blog-card { background: white; border-radius: 20px; overflow: hidden; width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .card-image { height: 200px; background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+        .card-content { padding: 24px; }
+        .tags { display: flex; gap: 8px; margin-bottom: 16px; }
+        .tag { background: #f1f5f9; color: #64748b; padding: 6px 12px; border-radius: 6px; font-size: 12px; }
+        .card-content h2 { font-size: 20px; color: #1e293b; margin-bottom: 12px; }
+        .card-content p { color: #64748b; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <article class="blog-card">
+        <div class="card-image"></div>
+        <div class="card-content">
+            <div class="tags"><span class="tag">React</span><span class="tag">Web Dev</span></div>
+            <h2>Building Modern Web Apps</h2>
+            <p>Learn how to create scalable web applications using modern tools.</p>
+        </div>
+    </article>
+</body>
+</html>`,
+                css: '',
+                message: "I've created a blog card component with image and content."
+            }
+        };
+
+        function getFallbackTemplate(prompt) {
+            const lower = prompt.toLowerCase();
+            if (lower.includes('landing') || lower.includes('saas')) return fallbackTemplates.landing;
+            if (lower.includes('login') || lower.includes('form')) return fallbackTemplates.login;
+            if (lower.includes('dashboard')) return fallbackTemplates.dashboard;
+            if (lower.includes('blog') || lower.includes('card')) return fallbackTemplates.blog;
+            return fallbackTemplates.landing; // 默认返回 landing page
+        }
+
+        // ========== 核心功能 ==========
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+        }
+
+        function updateUserInfo(user) {
+            if (!user) return;
+            document.getElementById('user-avatar').textContent = getInitials(user.name);
+            document.getElementById('user-name').textContent = user.name;
+            document.getElementById('dropdown-name').textContent = user.name;
+            document.getElementById('dropdown-email').textContent = user.email || '';
+            document.getElementById('profile-name').value = user.name || '';
+            document.getElementById('profile-email').value = user.email || '';
+            document.getElementById('profile-age').value = user.age || '';
+        }
+
+        function addMessage(content, type, isTyping = false) {
+            const container = document.getElementById('chat-messages');
+            const welcome = document.getElementById('welcome');
+            if (welcome) welcome.style.display = 'none';
+
+            const user = Auth.getUser();
+            const msg = document.createElement('div');
+            msg.className = 'message';
+
+            if (isTyping) {
+                msg.innerHTML = `
+                    <div class="message-avatar ai">AI</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-name">Vibe AI</span>
+                        </div>
+                        <div class="typing-indicator">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const avatar = type === 'user' ? getInitials(user?.name) : 'AI';
+                const name = type === 'user' ? (user?.name || 'You') : 'Vibe AI';
+                const avatarClass = type === 'ai' ? 'ai' : '';
+                const formattedContent = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
+                msg.innerHTML = `
+                    <div class="message-avatar ${avatarClass}">${avatar}</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-name">${name}</span>
+                            <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div class="message-text"><p>${formattedContent}</p></div>
+                    </div>
+                `;
+            }
+
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+            return msg;
+        }
+
+        function updatePreview(html, css) {
+            console.log('updatePreview called, html length:', html?.length || 0);
+            state.currentCode = { html, css };
+            const iframe = document.getElementById('preview-iframe');
+            const placeholder = document.getElementById('preview-placeholder');
+            const frameContainer = document.getElementById('preview-frame-container');
+            const codeView = document.getElementById('code-view');
+
+            // 隐藏占位符
+            placeholder.style.display = 'none';
+
+            // 切换到预览视图（从代码视图切换回来）
+            codeView.classList.remove('active');
+            frameContainer.classList.add('active');
+
+            // 更新视图标签状态
+            document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.view-tab[data-view="preview"]')?.classList.add('active');
+            state.currentView = 'preview';
+
+            // 渲染 HTML 到 iframe
+            const fullHtml = html.replace('</head>', `<style>${css}</style></head>`);
+            iframe.srcdoc = fullHtml;
+            console.log('iframe.srcdoc set, length:', fullHtml.length);
+
+            // 同时更新代码视图内容（供切换时使用）
+            codeView.innerHTML = highlightCode(html);
+        }
+
+        function highlightCode(code) {
+            return code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/(".*?")/g, '<span class="code-string">$1</span>')
+                .replace(/(&lt;\/?)([\w-]+)/g, '$1<span class="code-tag">$2</span>')
+                .replace(/([\w-]+)(=)/g, '<span class="code-attr">$1</span>$2');
+        }
+
+        async function handleSend() {
+            console.log('=== handleSend started ===');
+            const input = document.getElementById('chat-input');
+            const prompt = input.value.trim();
+            console.log('Prompt:', prompt);
+
+            if (!prompt || state.isGenerating) {
+                console.log('Early return: empty prompt or already generating');
+                return;
+            }
+
+            state.isGenerating = true;
+            document.getElementById('send-btn').disabled = true;
+
+            // 添加用户消息
+            addMessage(prompt, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+
+            // 创建 AI 响应消息（用于流式更新）
+            const aiMsg = createStreamingMessage();
+
+            // 显示代码视图用于实时显示生成的代码
+            showCodeViewForStreaming();
+
+            let sessionId = null;
+
+            try {
+                console.log('1. Sending generate request...');
+
+                // 先发起生成请求获取 sessionId
+                const initResponse = await fetch(`${AGENT_API_URL}/api/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                if (!initResponse.ok) {
+                    throw new Error('Failed to start generation');
+                }
+
+                const initData = await initResponse.json();
+                sessionId = initData.sessionId;
+                console.log('2. Got sessionId:', sessionId);
+
+                // 直接轮询等待结果（更可靠）
+                console.log('3. Polling for result...');
+                updateStreamingMessage(aiMsg, 'Generating your page...');
+
+                const result = await pollForResultWithProgress(sessionId, aiMsg, 300000); // 5分钟超时
+
+                if (result) {
+                    console.log('4. Got result! HTML length:', result.html?.length);
+                    finalizeMessage(aiMsg, result.message || 'Page generated successfully!');
+                    updatePreview(result.html, result.css || '');
+                    UI.success('Page generated!');
+                } else {
+                    console.log('4. No result, using fallback');
+                    const fallback = getFallbackTemplate(prompt);
+                    finalizeMessage(aiMsg, fallback.message);
+                    updatePreview(fallback.html, fallback.css || '');
+                }
+            } catch (err) {
+                console.error('handleSend error:', err);
+                const fallback = getFallbackTemplate(prompt);
+                finalizeMessage(aiMsg, fallback.message);
+                updatePreview(fallback.html, fallback.css || '');
+            }
+
+            state.isGenerating = false;
+            document.getElementById('send-btn').disabled = false;
+            console.log('=== handleSend complete ===');
+        }
+
+        // 带轮询备份的 SSE 流式接收
+        async function streamResultWithFallback(sessionId, aiMsg, onComplete) {
+            return new Promise((resolve, reject) => {
+                const sseUrl = `${AGENT_API_URL}/api/stream/${sessionId}`;
+                console.log('Creating EventSource:', sseUrl);
+                const eventSource = new EventSource(sseUrl);
+                let lastContent = '';
+                let completed = false;
+
+                const cleanup = () => {
+                    eventSource.close();
+                    resolve();
+                };
+
+                eventSource.onopen = () => {
+                    console.log('SSE connection opened');
+                };
+
+                eventSource.onmessage = (event) => {
+                    console.log('SSE message:', event.data.substring(0, 100));
+                    try {
+                        const data = JSON.parse(event.data);
+
+                        if (data.type === 'content') {
+                            lastContent = data.fullContent || lastContent + data.content;
+                            updateStreamingMessage(aiMsg, 'Generating code...');
+                            updateStreamingCode(lastContent);
+                        } else if (data.type === 'complete') {
+                            console.log('SSE complete event received');
+                            completed = true;
+                            if (data.result) {
+                                onComplete(data.result);
+                            }
+                            cleanup();
+                        } else if (data.type === 'error') {
+                            console.log('SSE error event:', data.error);
+                            if (data.result) {
+                                completed = true;
+                                onComplete(data.result);
+                            }
+                            cleanup();
+                        }
+                    } catch (e) {
+                        console.error('SSE parse error:', e);
+                    }
+                };
+
+                eventSource.onerror = (error) => {
+                    console.error('SSE connection error, readyState:', eventSource.readyState);
+                    cleanup();
+                };
+
+                // 30秒 SSE 超时（之后会用轮询兜底）
+                setTimeout(() => {
+                    if (!completed) {
+                        console.log('SSE timeout, will use polling');
+                        cleanup();
+                    }
+                }, 30000);
+            });
+        }
+
+        // 带进度更新的轮询
+        async function pollForResultWithProgress(sessionId, aiMsg, timeout = 300000) {
+            const startTime = Date.now();
+            const pollInterval = 2000; // 每2秒轮询一次
+            let pollCount = 0;
+            const statusMessages = [
+                'AI is thinking...',
+                'Generating your page...',
+                'Creating HTML structure...',
+                'Adding styles...',
+                'Polishing the design...',
+                'This may take 1-3 minutes...',
+                'Still working on it...',
+                'Almost there...',
+                'Finalizing...'
+            ];
+
+            while (Date.now() - startTime < timeout) {
+                try {
+                    pollCount++;
+                    const elapsed = Math.round((Date.now() - startTime) / 1000);
+                    console.log(`Poll #${pollCount} (${elapsed}s elapsed)`);
+
+                    const resp = await fetch(`${AGENT_API_URL}/api/session/${sessionId}`);
+                    const data = await resp.json();
+
+                    if (data.session) {
+                        console.log('Status:', data.session.status);
+
+                        // 更新进度消息（每10秒切换一次）
+                        const msgIndex = Math.min(Math.floor(pollCount / 5), statusMessages.length - 1);
+                        const elapsedSec = Math.round((Date.now() - startTime) / 1000);
+                        updateStreamingMessage(aiMsg, `${statusMessages[msgIndex]} (${elapsedSec}s)`);
+
+                        // 如果有流式内容，显示在代码视图
+                        if (data.session.streamContent) {
+                            updateStreamingCode(data.session.streamContent);
+                        }
+
+                        if (data.session.status === 'completed' && data.session.result) {
+                            console.log('✓ Got result!');
+                            return data.session.result;
+                        }
+                        if (data.session.status === 'error') {
+                            console.log('✗ Generation error');
+                            // 即使出错也可能有 fallback result
+                            if (data.session.result) {
+                                return data.session.result;
+                            }
+                            return null;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Poll error:', e);
+                }
+
+                await new Promise(r => setTimeout(r, pollInterval));
+            }
+
+            console.log('Poll timeout after', timeout/1000, 'seconds');
+            return null;
+        }
+
+        // 简单轮询（用于调试）
+        async function pollForResult(sessionId, timeout = 60000) {
+            const startTime = Date.now();
+            while (Date.now() - startTime < timeout) {
+                try {
+                    const resp = await fetch(`${AGENT_API_URL}/api/session/${sessionId}`);
+                    const data = await resp.json();
+                    if (data.session?.status === 'completed' && data.session.result) {
+                        return data.session.result;
+                    }
+                    if (data.session?.status === 'error' && data.session.result) {
+                        return data.session.result;
+                    }
+                } catch (e) {
+                    console.error('Poll error:', e);
+                }
+                await new Promise(r => setTimeout(r, 2000));
+            }
+            return null;
+        }
+
+        // 创建流式消息容器
+        function createStreamingMessage() {
+            const container = document.getElementById('chat-messages');
+            const welcome = document.getElementById('welcome');
+            if (welcome) welcome.style.display = 'none';
+
+            const msg = document.createElement('div');
+            msg.className = 'message';
+            msg.innerHTML = `
+                <div class="message-avatar ai">AI</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-name">Vibe AI</span>
+                        <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <div class="message-text">
+                        <p class="streaming-text">
+                            <span class="typing-indicator"><span></span><span></span><span></span></span>
+                            <span class="status-text">Connecting to AI...</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+            return msg;
+        }
+
+        // 更新流式消息状态
+        function updateStreamingMessage(msg, statusText) {
+            const statusEl = msg.querySelector('.status-text');
+            if (statusEl) {
+                statusEl.textContent = statusText;
+            }
+        }
+
+        // 完成消息
+        function finalizeMessage(msg, text) {
+            const textEl = msg.querySelector('.message-text');
+            if (textEl) {
+                const formattedContent = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                textEl.innerHTML = `<p>${formattedContent}</p>`;
+            }
+        }
+
+        // 显示代码视图用于流式显示
+        function showCodeViewForStreaming() {
+            const codeView = document.getElementById('code-view');
+            const frameContainer = document.getElementById('preview-frame-container');
+            const placeholder = document.getElementById('preview-placeholder');
+
+            // 切换到代码视图
+            document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.view-tab[data-view="code"]')?.classList.add('active');
+
+            placeholder.style.display = 'none';
+            codeView.classList.add('active');
+            frameContainer.classList.remove('active');
+            codeView.innerHTML = '<span style="color: var(--text-muted);">Generating code...</span>';
+        }
+
+        // 更新流式代码显示
+        function updateStreamingCode(content) {
+            const codeView = document.getElementById('code-view');
+            if (codeView) {
+                codeView.innerHTML = highlightCode(content);
+                codeView.scrollTop = codeView.scrollHeight;
+            }
+        }
+
+        // ========== 事件绑定 ==========
+        function bindEvents() {
+            // 用户菜单
+            const userBtn = document.getElementById('user-btn');
+            const dropdown = document.getElementById('user-dropdown');
+            userBtn.addEventListener('click', e => { e.stopPropagation(); dropdown.classList.toggle('show'); });
+            document.addEventListener('click', () => dropdown.classList.remove('show'));
+
+            // 编辑资料
+            document.getElementById('btn-profile').addEventListener('click', () => {
+                dropdown.classList.remove('show');
+                document.getElementById('profile-modal').classList.add('show');
+            });
+
+            // 登出
+            document.getElementById('btn-logout').addEventListener('click', async () => {
+                await Auth.logout();
+                window.location.href = '/';
+            });
+
+            // 弹窗关闭
+            document.getElementById('modal-close').addEventListener('click', () => {
+                document.getElementById('profile-modal').classList.remove('show');
+            });
+            document.getElementById('profile-modal').addEventListener('click', e => {
+                if (e.target.id === 'profile-modal') e.target.classList.remove('show');
+            });
+
+            // 保存资料
+            document.getElementById('profile-form').addEventListener('submit', async e => {
+                e.preventDefault();
+                try {
+                    await Auth.updateProfile({
+                        name: document.getElementById('profile-name').value,
+                        email: document.getElementById('profile-email').value,
+                        age: parseInt(document.getElementById('profile-age').value) || 0
+                    });
+                    UI.success('Profile updated');
+                    document.getElementById('profile-modal').classList.remove('show');
+                } catch (error) {
+                    UI.error(error.message);
+                }
+            });
+
+            // 发送消息
+            document.getElementById('send-btn').addEventListener('click', handleSend);
+            document.getElementById('chat-input').addEventListener('keydown', e => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+            });
+
+            // 输入框自动高度
+            document.getElementById('chat-input').addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // 建议按钮
+            document.querySelectorAll('.suggestion').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('chat-input').value = btn.dataset.prompt;
+                    handleSend();
+                });
+            });
+
+            // 视图切换
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const view = tab.dataset.view;
+                    state.currentView = view;
+
+                    const codeView = document.getElementById('code-view');
+                    const frameContainer = document.getElementById('preview-frame-container');
+
+                    if (view === 'code') {
+                        codeView.classList.add('active');
+                        frameContainer.classList.remove('active');
+                    } else {
+                        codeView.classList.remove('active');
+                        if (state.currentCode.html) frameContainer.classList.add('active');
+                    }
+                });
+            });
+
+            // 预览文件标签
+            document.querySelectorAll('.preview-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const file = tab.dataset.file;
+                    const codeView = document.getElementById('code-view');
+                    if (file === 'style.css') {
+                        codeView.innerHTML = highlightCode(state.currentCode.css || '/* No CSS yet */');
+                    } else {
+                        codeView.innerHTML = highlightCode(state.currentCode.html || '<!-- No HTML yet -->');
+                    }
+                });
+            });
+
+            // 复制代码
+            document.getElementById('btn-copy').addEventListener('click', () => {
+                const code = state.currentView === 'code' ?
+                    (document.querySelector('.preview-tab.active').dataset.file === 'style.css' ? state.currentCode.css : state.currentCode.html) :
+                    state.currentCode.html;
+                navigator.clipboard.writeText(code).then(() => UI.success('Code copied!'));
+            });
+
+            // 下载
+            document.getElementById('btn-download').addEventListener('click', () => {
+                const blob = new Blob([state.currentCode.html], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'index.html';
+                a.click();
+                UI.success('Downloaded!');
+            });
+
+            // 拖拽调整面板大小
+            const resizer = document.getElementById('resizer');
+            const chatPanel = document.querySelector('.chat-panel');
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', () => { isResizing = true; document.body.style.cursor = 'col-resize'; });
+            document.addEventListener('mousemove', e => {
+                if (!isResizing) return;
+                const newWidth = Math.max(360, Math.min(700, e.clientX));
+                chatPanel.style.width = newWidth + 'px';
+            });
+            document.addEventListener('mouseup', () => { isResizing = false; document.body.style.cursor = ''; });
+        }
+
+        // ========== 初始化 ==========
+        async function init() {
+            console.log('Workspace init started');
+            try {
+                await Auth.init();
+                console.log('Auth initialized, logged in:', Auth.isLoggedIn());
+
+                if (!Auth.isLoggedIn()) {
+                    console.log('Not logged in, redirecting...');
+                    window.location.href = '/';
+                    return;
+                }
+
+                updateUserInfo(Auth.getUser());
+                Auth.subscribe(user => {
+                    if (!user) window.location.href = '/';
+                    else updateUserInfo(user);
+                });
+
+                bindEvents();
+                console.log('Workspace init complete, events bound');
+            } catch (err) {
+                console.error('Init error:', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+
+        // 调试：直接测试按钮点击
+        window.testSend = async function() {
+            console.log('=== Manual Test Send ===');
+            const prompt = document.getElementById('chat-input')?.value || 'Create a landing page';
+            console.log('Test prompt:', prompt);
+
+            try {
+                console.log('Testing fetch to:', AGENT_API_URL + '/api/generate');
+                const resp = await fetch(AGENT_API_URL + '/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await resp.json();
+                console.log('Test response:', data);
+            } catch (e) {
+                console.error('Test error:', e);
+            }
+        };
+
+        console.log('Scripts loaded. Run testSend() in console to test API.');
+
+        // 手动渲染已生成的结果（用于调试）
+        window.renderResult = async function(sessionId) {
+            console.log('Fetching result for session:', sessionId);
+            try {
+                const resp = await fetch(`${AGENT_API_URL}/api/session/${sessionId}`);
+                const data = await resp.json();
+                console.log('Session data:', data);
+
+                if (data.session && data.session.result) {
+                    const result = data.session.result;
+                    console.log('Rendering HTML, length:', result.html?.length || 0);
+
+                    // 更新预览（会自动切换到预览视图）
+                    updatePreview(result.html, result.css || '');
+
+                    // 更新消息
+                    const container = document.getElementById('chat-messages');
+                    const welcome = document.getElementById('welcome');
+                    if (welcome) welcome.style.display = 'none';
+
+                    const msg = document.createElement('div');
+                    msg.className = 'message';
+                    msg.innerHTML = `
+                        <div class="message-avatar ai">AI</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-name">Vibe AI</span>
+                            </div>
+                            <div class="message-text"><p>${(result.message || 'Page generated').replace(/\n/g, '<br>')}</p></div>
+                        </div>
+                    `;
+                    container.appendChild(msg);
+
+                    console.log('Render complete!');
+                    UI.success('Page rendered successfully!');
+                    return true;
+                } else {
+                    console.log('No result found in session');
+                    UI.error('No result found');
+                    return false;
+                }
+            } catch (e) {
+                console.error('Render error:', e);
+                UI.error('Render error: ' + e.message);
+                return false;
+            }
+        };
+
+        // 列出所有 session
+        window.listSessions = async function() {
+            try {
+                const resp = await fetch(`${AGENT_API_URL}/api/sessions`);
+                const data = await resp.json();
+                console.log('Sessions:', data);
+                return data;
+            } catch (e) {
+                console.error('Error:', e);
+                return null;
+            }
+        };
+
+        console.log('Debug functions: renderResult("SESSION_ID"), listSessions()');
+    </script>
+</body>
+</html>

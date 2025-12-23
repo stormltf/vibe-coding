@@ -120,8 +120,8 @@ func Metrics() app.HandlerFunc {
 			path = "not_found"
 		}
 
-		// 直接使用 bytes 避免内存分配
-		method := b2s(c.Method())
+		// 获取请求方法和状态码
+		method := string(c.Method())
 		status := strconv.Itoa(c.Response.StatusCode())
 
 		httpRequestsTotal.WithLabelValues(method, path, status).Inc()

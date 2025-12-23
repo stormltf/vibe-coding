@@ -54,10 +54,12 @@
 
 | 功能 | 描述 |
 |------|------|
+| 用户认证 | 注册、登录、登出、修改密码、注销账号 |
 | 参数校验 | 基于 validator 的请求参数校验 |
 | 分页查询 | 统一分页参数解析和结果格式 |
 | 限流保护 | IP 级 + 全局 + 分布式限流 |
 | JWT 认证 | Bearer Token 认证中间件 |
+| Token 黑名单 | 登出后 Token 失效（Redis 存储）|
 | 链路追踪 | LogID 贯穿请求全生命周期 |
 | 指标监控 | Prometheus 指标采集 |
 | 性能分析 | pprof 端点集成 |
@@ -106,6 +108,21 @@
 - logid 链路追踪
 - 简化 API：`logger.InfoCtxf(ctx, "msg", "key", value)`
 
+### 前端页面 (Vibe Coding)
+
+项目内置了一个现代化的前端页面，主题为 **Vibe Coding**：
+
+- **技术栈**：纯 HTML/CSS/JavaScript，无框架依赖
+- **设计风格**：深色科技感、渐变色、霓虹发光效果
+- **功能模块**：
+  - 用户注册/登录
+  - 个人信息管理
+  - 用户列表浏览
+  - API 状态监控
+  - 响应式设计
+
+访问首页：`http://localhost:8888/`
+
 ## 项目结构
 
 ```
@@ -137,6 +154,11 @@
 │   ├── response/               # 统一响应
 │   ├── tracing/                # 链路追踪
 │   └── validate/               # 参数校验
+├── web/                        # 前端页面 (Vibe Coding)
+│   ├── index.html              # 主页面
+│   ├── css/                    # 样式文件
+│   ├── js/                     # JavaScript 模块
+│   └── assets/                 # 静态资源
 ├── docs/                       # Swagger 文档
 ├── locales/                    # 多语言文件
 ├── scripts/                    # SQL 初始化脚本
@@ -278,7 +300,19 @@ http://localhost:8888/swagger/index.html
 | GET | `/debug/pprof/profile` | CPU 分析 (30s) |
 | GET | `/debug/pprof/trace` | 执行追踪 |
 
-### 业务接口
+### 认证接口
+
+| 方法 | 路径 | 描述 | 认证 |
+|------|------|------|------|
+| POST | `/api/v1/auth/register` | 用户注册 | 否 |
+| POST | `/api/v1/auth/login` | 用户登录 | 否 |
+| POST | `/api/v1/auth/logout` | 用户登出 | JWT |
+| GET | `/api/v1/auth/profile` | 获取当前用户信息 | JWT |
+| PUT | `/api/v1/auth/profile` | 修改当前用户信息 | JWT |
+| PUT | `/api/v1/auth/password` | 修改密码 | JWT |
+| DELETE | `/api/v1/auth/account` | 注销账号 | JWT |
+
+### 用户管理接口
 
 | 方法 | 路径 | 描述 | 认证 |
 |------|------|------|------|
@@ -314,6 +348,77 @@ GET /api/v1/users?page=1&page_size=10
 需要在请求头添加：
 ```
 Authorization: Bearer <token>
+```
+
+### 认证接口示例
+
+**注册**：
+```bash
+curl -X POST http://localhost:8888/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "张三", "email": "zhangsan@example.com", "password": "password123"}'
+```
+
+响应：
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "张三",
+      "email": "zhangsan@example.com",
+      "age": 0,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**登录**：
+```bash
+curl -X POST http://localhost:8888/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "zhangsan@example.com", "password": "password123"}'
+```
+
+**登出**：
+```bash
+curl -X POST http://localhost:8888/api/v1/auth/logout \
+  -H "Authorization: Bearer <token>"
+```
+
+**获取用户信息**：
+```bash
+curl http://localhost:8888/api/v1/auth/profile \
+  -H "Authorization: Bearer <token>"
+```
+
+**修改用户信息**：
+```bash
+curl -X PUT http://localhost:8888/api/v1/auth/profile \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "李四", "age": 30}'
+```
+
+**修改密码**：
+```bash
+curl -X PUT http://localhost:8888/api/v1/auth/password \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"old_password": "password123", "new_password": "newpassword456"}'
+```
+
+**注销账号**：
+```bash
+curl -X DELETE http://localhost:8888/api/v1/auth/account \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "password123"}'
 ```
 
 ## 配置说明
@@ -429,11 +534,24 @@ response.Fail(c, errcode.ErrInvalidParams.WithMessage("name is required"))
 | 范围 | 类型 | 示例 |
 |------|------|------|
 | 0 | 成功 | 0 = Success |
-| 1xxx | 系统错误 | 1001 = 内部错误 |
-| 2xxx | 数据库错误 | 2001 = 数据库错误 |
-| 3xxx | 缓存错误 | 3001 = 缓存错误 |
-| 4xxx | 请求错误 | 4001 = 参数错误, 4004 = 未找到 |
-| 5xxx | 认证错误 | 5001 = 未授权, 5002 = Token过期 |
+| 1xxx | 通用错误 | 1001 = 参数错误, 1002 = 未授权 |
+| 2xxx | 用户错误 | 2001 = 用户不存在, 2004 = 密码错误, 2005 = 邮箱已使用 |
+| 3xxx | 数据库错误 | 3001 = 数据库错误 |
+| 4xxx | 缓存错误 | 4001 = 缓存错误 |
+
+**用户相关错误码详情**：
+
+| 错误码 | 说明 |
+|--------|------|
+| 2001 | 用户不存在 |
+| 2002 | 用户已存在 |
+| 2003 | 无效的用户ID |
+| 2004 | 密码错误 |
+| 2005 | 邮箱已被使用 |
+| 2006 | Token 无效 |
+| 2007 | Token 已过期 |
+| 2008 | 需要登录 |
+| 2009 | 密码强度不足 |
 
 ## 监控
 

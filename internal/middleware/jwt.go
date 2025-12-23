@@ -42,9 +42,10 @@ func JWTAuth(jwtConfig *jwt.Config) app.HandlerFunc {
 		// 解析 token
 		claims, err := j.ParseToken(parts[1])
 		if err != nil {
+			// 安全考虑：返回泛化的错误信息，避免泄露 token 验证细节
 			c.AbortWithStatusJSON(http.StatusUnauthorized, map[string]interface{}{
 				"code":    1002,
-				"message": err.Error(),
+				"message": "invalid or expired token",
 			})
 			return
 		}
@@ -75,10 +76,22 @@ func GetUsername(ctx context.Context) string {
 	return ""
 }
 
-// GetUserIDFromContext 从 RequestContext 获取用户 ID
+// GetUserIDFromContext 从 RequestContext 获取用户 ID（安全版本）
 func GetUserIDFromContext(c *app.RequestContext) uint64 {
 	if id, exists := c.Get("user_id"); exists {
-		return id.(uint64)
+		if uid, ok := id.(uint64); ok {
+			return uid
+		}
 	}
 	return 0
+}
+
+// GetUsernameFromContext 从 RequestContext 获取用户名（安全版本）
+func GetUsernameFromContext(c *app.RequestContext) string {
+	if name, exists := c.Get("username"); exists {
+		if uname, ok := name.(string); ok {
+			return uname
+		}
+	}
+	return ""
 }

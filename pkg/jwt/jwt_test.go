@@ -138,40 +138,82 @@ func TestParseToken_ExpiredToken(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
-	j := New(&Config{
-		Secret:     "test-secret",
-		Issuer:     "test",
-		ExpireTime: time.Hour,
+	t.Run("refresh too early", func(t *testing.T) {
+		// Token 有 24 小时有效期，远超 MinRefreshWindow (2小时)
+		j := New(&Config{
+			Secret:     "test-secret",
+			Issuer:     "test",
+			ExpireTime: 24 * time.Hour,
+		})
+
+		token1, err := j.GenerateToken(1, "user")
+		if err != nil {
+			t.Fatalf("GenerateToken() error = %v", err)
+		}
+
+		// 尝试刷新（应该失败，因为剩余时间 24h > MinRefreshWindow 2h）
+		_, err = j.RefreshToken(token1)
+		if !errors.Is(err, ErrRefreshTooEarly) {
+			t.Errorf("expected ErrRefreshTooEarly, got %v", err)
+		}
 	})
 
-	// Generate initial token
-	token1, err := j.GenerateToken(1, "user")
-	if err != nil {
-		t.Fatalf("GenerateToken() error = %v", err)
-	}
+	t.Run("force refresh", func(t *testing.T) {
+		j := New(&Config{
+			Secret:     "test-secret",
+			Issuer:     "test",
+			ExpireTime: 24 * time.Hour,
+		})
 
-	// Wait to ensure different issued time (JWT uses second precision)
-	time.Sleep(time.Second + 100*time.Millisecond)
+		token1, err := j.GenerateToken(1, "user")
+		if err != nil {
+			t.Fatalf("GenerateToken() error = %v", err)
+		}
 
-	// Refresh token
-	token2, err := j.RefreshToken(token1)
-	if err != nil {
-		t.Fatalf("RefreshToken() error = %v", err)
-	}
+		// 强制刷新应该成功（不检查剩余时间）
+		token2, err := j.ForceRefreshToken(token1)
+		if err != nil {
+			t.Fatalf("ForceRefreshToken() error = %v", err)
+		}
 
-	// Tokens may be identical if generated in same second, so we just verify
-	// the refreshed token is valid and has correct user info
-	claims, err := j.ParseToken(token2)
-	if err != nil {
-		t.Fatalf("ParseToken() error = %v", err)
-	}
+		claims, err := j.ParseToken(token2)
+		if err != nil {
+			t.Fatalf("ParseToken() error = %v", err)
+		}
 
-	if claims.UserID != 1 {
-		t.Errorf("UserID = %v, want 1", claims.UserID)
-	}
-	if claims.Username != "user" {
-		t.Errorf("Username = %v, want 'user'", claims.Username)
-	}
+		if claims.UserID != 1 {
+			t.Errorf("UserID = %v, want 1", claims.UserID)
+		}
+	})
+
+	t.Run("refresh near expiry", func(t *testing.T) {
+		// Token 有 1 小时有效期，小于 MinRefreshWindow (2小时)
+		j := New(&Config{
+			Secret:     "test-secret",
+			Issuer:     "test",
+			ExpireTime: time.Hour,
+		})
+
+		token1, err := j.GenerateToken(1, "user")
+		if err != nil {
+			t.Fatalf("GenerateToken() error = %v", err)
+		}
+
+		// 这个 token 剩余时间 1h < MinRefreshWindow 2h，应该允许刷新
+		token2, err := j.RefreshToken(token1)
+		if err != nil {
+			t.Fatalf("RefreshToken() error = %v", err)
+		}
+
+		claims, err := j.ParseToken(token2)
+		if err != nil {
+			t.Fatalf("ParseToken() error = %v", err)
+		}
+
+		if claims.UserID != 1 {
+			t.Errorf("UserID = %v, want 1", claims.UserID)
+		}
+	})
 }
 
 func TestRefreshToken_InvalidToken(t *testing.T) {
@@ -190,8 +232,9 @@ func TestRefreshToken_InvalidToken(t *testing.T) {
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 
-	if cfg.Secret == "" {
-		t.Error("expected non-empty secret")
+	// 安全改进：默认配置返回空密钥，强制用户显式配置
+	if cfg.Secret != "" {
+		t.Error("expected empty secret (security: force explicit configuration)")
 	}
 	if cfg.Issuer != "test-tt" {
 		t.Errorf("Issuer = %v, want 'test-tt'", cfg.Issuer)
@@ -199,4 +242,37 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.ExpireTime != 24*time.Hour {
 		t.Errorf("ExpireTime = %v, want 24h", cfg.ExpireTime)
 	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	t.Run("nil config", func(t *testing.T) {
+		err := ValidateConfig(nil)
+		if !errors.Is(err, ErrSecretNotConfigured) {
+			t.Errorf("expected ErrSecretNotConfigured, got %v", err)
+		}
+	})
+
+	t.Run("empty secret", func(t *testing.T) {
+		cfg := &Config{Secret: ""}
+		err := ValidateConfig(cfg)
+		if !errors.Is(err, ErrSecretNotConfigured) {
+			t.Errorf("expected ErrSecretNotConfigured, got %v", err)
+		}
+	})
+
+	t.Run("short secret", func(t *testing.T) {
+		cfg := &Config{Secret: "short"}
+		err := ValidateConfig(cfg)
+		if err == nil {
+			t.Error("expected error for short secret")
+		}
+	})
+
+	t.Run("valid secret", func(t *testing.T) {
+		cfg := &Config{Secret: "this-is-a-very-long-secret-key-for-testing"}
+		err := ValidateConfig(cfg)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
 }

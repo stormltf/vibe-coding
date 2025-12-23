@@ -53,26 +53,61 @@ func TestRequestID(t *testing.T) {
 
 // TestCORS 测试 CORS 中间件
 func TestCORS(t *testing.T) {
-	r := newTestEngine()
-	r.Use(CORS())
-	r.GET("/test", func(ctx context.Context, c *app.RequestContext) {
-		c.String(http.StatusOK, "ok")
-	})
+	t.Run("default config blocks unknown origins", func(t *testing.T) {
+		r := newTestEngine()
+		r.Use(CORS()) // 默认安全配置
+		r.GET("/test", func(ctx context.Context, c *app.RequestContext) {
+			c.String(http.StatusOK, "ok")
+		})
 
-	t.Run("sets CORS headers", func(t *testing.T) {
 		w := ut.PerformRequest(r, http.MethodGet, "/test", nil,
 			ut.Header{Key: "Origin", Value: "http://example.com"})
 
 		assert.DeepEqual(t, http.StatusOK, w.Code)
-		assert.DeepEqual(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
+		// 默认配置不设置 CORS 头（安全模式）
+		assert.DeepEqual(t, "", w.Header().Get("Access-Control-Allow-Origin"))
 	})
 
-	t.Run("handles preflight request", func(t *testing.T) {
+	t.Run("dev config allows localhost", func(t *testing.T) {
+		r := newTestEngine()
+		r.Use(CORSWithConfig(DevCORSConfig()))
+		r.GET("/test", func(ctx context.Context, c *app.RequestContext) {
+			c.String(http.StatusOK, "ok")
+		})
+
+		w := ut.PerformRequest(r, http.MethodGet, "/test", nil,
+			ut.Header{Key: "Origin", Value: "http://localhost:3000"})
+
+		assert.DeepEqual(t, http.StatusOK, w.Code)
+		assert.DeepEqual(t, "http://localhost:3000", w.Header().Get("Access-Control-Allow-Origin"))
+	})
+
+	t.Run("handles preflight for allowed origin", func(t *testing.T) {
+		r := newTestEngine()
+		r.Use(CORSWithConfig(DevCORSConfig()))
+		r.GET("/test", func(ctx context.Context, c *app.RequestContext) {
+			c.String(http.StatusOK, "ok")
+		})
+
 		w := ut.PerformRequest(r, http.MethodOptions, "/test", nil,
-			ut.Header{Key: "Origin", Value: "http://example.com"},
+			ut.Header{Key: "Origin", Value: "http://localhost:8080"},
 			ut.Header{Key: "Access-Control-Request-Method", Value: "POST"})
 
 		assert.DeepEqual(t, http.StatusNoContent, w.Code)
+	})
+
+	t.Run("blocks preflight for disallowed origin", func(t *testing.T) {
+		r := newTestEngine()
+		r.Use(CORS()) // 默认安全配置
+		r.GET("/test", func(ctx context.Context, c *app.RequestContext) {
+			c.String(http.StatusOK, "ok")
+		})
+
+		w := ut.PerformRequest(r, http.MethodOptions, "/test", nil,
+			ut.Header{Key: "Origin", Value: "http://malicious.com"},
+			ut.Header{Key: "Access-Control-Request-Method", Value: "POST"})
+
+		assert.DeepEqual(t, http.StatusForbidden, w.Code)
 	})
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/rand"
 	"time"
-	"unsafe"
 
 	"github.com/cloudwego/hertz/pkg/app"
 
@@ -54,7 +53,7 @@ func AccessLogWithConfig(cfg *AccessLogConfig) app.HandlerFunc {
 
 		// 计算请求耗时
 		latency := time.Since(start)
-		path := b2s(c.Path())
+		path := string(c.Path())
 
 		// 跳过特定路径
 		if skipPathsMap[path] {
@@ -84,16 +83,11 @@ func AccessLogWithConfig(cfg *AccessLogConfig) app.HandlerFunc {
 		// 记录日志
 		logFunc(ctx, "access",
 			"status", status,
-			"method", b2s(c.Method()),
+			"method", string(c.Method()),
 			"path", path,
 			"latency", latency.String(),
 			"ip", c.ClientIP(),
 			"slow", isSlow,
 		)
 	}
-}
-
-// b2s converts byte slice to string without memory allocation
-func b2s(b []byte) string {
-	return *(*string)(unsafe.Pointer(&b))
 }

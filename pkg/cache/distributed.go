@@ -8,6 +8,17 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// DefaultRedisTimeout Redis 操作默认超时时间
+const DefaultRedisTimeout = 3 * time.Second
+
+// withTimeout 为 context 添加超时（如果尚未设置）
+func withTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		return ctx, func() {} // 已有超时，不添加新的
+	}
+	return context.WithTimeout(ctx, timeout)
+}
+
 // DistributedCache 分布式缓存（无状态服务使用）
 // 所有状态存储在 Redis，支持多实例部署
 type DistributedCache struct {
@@ -145,6 +156,10 @@ func NewDistributedRateLimiter(rdb *redis.Client, rate int) *DistributedRateLimi
 
 // Allow 检查是否允许请求（滑动窗口算法）
 func (r *DistributedRateLimiter) Allow(ctx context.Context, key string) (bool, error) {
+	// 确保有超时控制
+	ctx, cancel := withTimeout(ctx, DefaultRedisTimeout)
+	defer cancel()
+
 	now := time.Now().UnixNano()
 	windowStart := now - int64(r.window)
 
@@ -212,6 +227,10 @@ func NewTokenBucketLimiter(rdb *redis.Client, rate float64, capacity int64) *Tok
 
 // Allow 检查是否允许请求
 func (t *TokenBucketLimiter) Allow(ctx context.Context, key string) (bool, error) {
+	// 确保有超时控制
+	ctx, cancel := withTimeout(ctx, DefaultRedisTimeout)
+	defer cancel()
+
 	redisKey := t.prefix + key
 	now := float64(time.Now().UnixNano()) / 1e9
 

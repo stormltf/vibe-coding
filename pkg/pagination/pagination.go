@@ -10,6 +10,7 @@ const (
 	DefaultPage     = 1
 	DefaultPageSize = 10
 	MaxPageSize     = 100
+	MaxPage         = 10000 // 最大页码，防止 DoS 攻击
 )
 
 // Pagination 分页参数
@@ -55,6 +56,10 @@ func GetFromQuery(c *app.RequestContext) *Pagination {
 	if p := c.Query("page"); p != "" {
 		if v, err := strconv.Atoi(p); err == nil && v > 0 {
 			page = v
+			// 安全限制：防止过大页码导致的 DoS
+			if page > MaxPage {
+				page = MaxPage
+			}
 		}
 	}
 

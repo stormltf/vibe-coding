@@ -21,19 +21,94 @@ import (
 	"github.com/test-tt/pkg/jwt"
 )
 
+// getJWTConfig 返回统一的 JWT 配置
+func getJWTConfig() *jwt.Config {
+	if config.Cfg != nil && config.Cfg.JWT != nil {
+		return &jwt.Config{
+			Secret:     config.Cfg.JWT.Secret,
+			Issuer:     config.Cfg.JWT.Issuer,
+			ExpireTime: config.Cfg.JWT.ExpireTime,
+		}
+	}
+	// 开发环境默认配置
+	jwtConfig := jwt.DefaultConfig()
+	jwtConfig.Secret = "dev-secret-key-at-least-32-chars!"
+	return jwtConfig
+}
+
 func Register(h *server.Hertz) {
 	// 全局中间件
+	// CORS 配置：开发环境允许 localhost，生产环境需要显式配置允许的域名
+	var corsConfig *middleware.CORSConfig
+	if config.Cfg == nil || config.Cfg.IsDev() {
+		corsConfig = middleware.DevCORSConfig()
+	} else {
+		// 生产环境：从配置加载允许的域名，或使用默认安全配置
+		corsConfig = middleware.DefaultCORSConfig()
+		// TODO: 从配置文件加载 AllowedOrigins
+		// corsConfig.AllowedOrigins = config.Cfg.CORS.AllowedOrigins
+	}
+
 	h.Use(
 		middleware.Recovery(),
 		middleware.RequestID(),
-		middleware.CORS(),
-		gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".png", ".jpg", ".jpeg", ".gif"})),
+		middleware.SecurityHeaders(), // 安全响应头
+		middleware.CORSWithConfig(corsConfig),
+		gzip.Gzip(gzip.DefaultCompression,
+			gzip.WithExcludedExtensions([]string{".png", ".jpg", ".jpeg", ".gif", ".html", ".css", ".js", ".svg"}),
+			gzip.WithExcludedPaths([]string{"/"}),
+		),
 		middleware.Metrics(),
 		middleware.AccessLog(),
 	)
 
 	pingHandler := handler.NewPingHandler()
 	userHandler := handler.NewUserHandler()
+	authHandler := handler.NewAuthHandler()
+
+	// 静态文件服务 - 手动处理 JS 和 CSS
+	h.GET("/static/js/:file", func(ctx context.Context, c *app.RequestContext) {
+		file := c.Param("file")
+		data, err := os.ReadFile("./web/static/js/" + file)
+		if err != nil {
+			c.String(http.StatusNotFound, "File not found")
+			return
+		}
+		c.Header("Content-Type", "application/javascript; charset=utf-8")
+		c.Data(http.StatusOK, "application/javascript", data)
+	})
+	h.GET("/static/css/:file", func(ctx context.Context, c *app.RequestContext) {
+		file := c.Param("file")
+		data, err := os.ReadFile("./web/static/css/" + file)
+		if err != nil {
+			c.String(http.StatusNotFound, "File not found")
+			return
+		}
+		c.Header("Content-Type", "text/css; charset=utf-8")
+		c.Data(http.StatusOK, "text/css", data)
+	})
+	h.GET("/static/assets/:file", func(ctx context.Context, c *app.RequestContext) {
+		file := c.Param("file")
+		data, err := os.ReadFile("./web/static/assets/" + file)
+		if err != nil {
+			c.String(http.StatusNotFound, "File not found")
+			return
+		}
+		c.Data(http.StatusOK, "image/svg+xml", data)
+	})
+	h.StaticFile("/favicon.ico", "./web/static/assets/favicon.svg")
+
+	// 首页 - 手动设置 Content-Type 避免乱码
+	h.GET("/", func(ctx context.Context, c *app.RequestContext) {
+		c.Header("Content-Type", "text/html; charset=utf-8")
+		c.File("./web/index.html")
+	})
+
+	// 工作空间页面
+	h.GET("/workspace.html", func(ctx context.Context, c *app.RequestContext) {
+		c.Header("Content-Type", "text/html; charset=utf-8")
+		c.File("./web/workspace.html")
+	})
 
 	// 健康检查
 	h.GET("/ping", pingHandler.Ping)
@@ -73,6 +148,25 @@ func Register(h *server.Hertz) {
 	// API v1 - 公开接口
 	v1 := h.Group("/api/v1")
 	{
+		// 认证相关 - 公开接口（添加严格限流防止暴力破解）
+		auth := v1.Group("/auth")
+		auth.Use(middleware.AuthRateLimit()) // 认证端点专用限流：每 IP 每分钟 10 次
+		{
+			auth.POST("/register", authHandler.Register)
+			auth.POST("/login", authHandler.Login)
+		}
+
+		// 认证相关 - 需要登录
+		authProtected := v1.Group("/auth")
+		authProtected.Use(middleware.JWTAuth(getJWTConfig()))
+		{
+			authProtected.POST("/logout", authHandler.Logout)
+			authProtected.GET("/profile", authHandler.GetProfile)
+			authProtected.PUT("/profile", authHandler.UpdateProfile)
+			authProtected.PUT("/password", authHandler.ChangePassword)
+			authProtected.DELETE("/account", authHandler.DeleteAccount)
+		}
+
 		// 用户相关 - 公开接口
 		users := v1.Group("/users")
 		{
@@ -82,7 +176,7 @@ func Register(h *server.Hertz) {
 
 		// 需要认证的接口
 		authUsers := v1.Group("/users")
-		authUsers.Use(middleware.JWTAuth(jwt.DefaultConfig()))
+		authUsers.Use(middleware.JWTAuth(getJWTConfig()))
 		{
 			authUsers.POST("", userHandler.CreateUser)
 			authUsers.PUT("/:id", userHandler.UpdateUser)
@@ -205,6 +299,7 @@ func pprofHandler(h http.HandlerFunc) app.HandlerFunc {
 // debugAuthMiddleware 调试端点认证中间件
 // 用于保护 pprof 和 metrics 等敏感端点
 // 通过环境变量 DEBUG_AUTH_TOKEN 设置访问令牌
+// 安全要求：仅支持 Authorization Header，不支持 Query 参数（避免 Token 泄露到日志）
 func debugAuthMiddleware() app.HandlerFunc {
 	token := os.Getenv("DEBUG_AUTH_TOKEN")
 	tokenRequired := token != "" // 如果设置了 token 则必须验证
@@ -219,11 +314,14 @@ func debugAuthMiddleware() app.HandlerFunc {
 			return
 		}
 
-		// 检查 Authorization header
+		// 仅支持 Authorization header（安全考虑：Query 参数会被记录到访问日志）
 		auth := string(c.GetHeader("Authorization"))
 		if auth == "" {
-			// 也支持 query parameter
-			auth = c.Query("token")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, map[string]interface{}{
+				"code":    4001,
+				"message": "unauthorized: Authorization header required",
+			})
+			return
 		}
 
 		// Bearer token 格式
@@ -231,14 +329,27 @@ func debugAuthMiddleware() app.HandlerFunc {
 			auth = auth[7:]
 		}
 
-		if auth != token {
+		// 使用常量时间比较防止时序攻击
+		if !secureCompare(auth, token) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, map[string]interface{}{
 				"code":    4001,
-				"message": "unauthorized: invalid or missing debug token",
+				"message": "unauthorized: invalid debug token",
 			})
 			return
 		}
 
 		c.Next(ctx)
 	}
+}
+
+// secureCompare 常量时间字符串比较，防止时序攻击
+func secureCompare(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	var result byte
+	for i := 0; i < len(a); i++ {
+		result |= a[i] ^ b[i]
+	}
+	return result == 0
 }

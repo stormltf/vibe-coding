@@ -3,7 +3,9 @@ package middleware
 import (
 	"container/list"
 	"context"
+	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +15,79 @@ import (
 	"github.com/test-tt/pkg/cache"
 	"github.com/test-tt/pkg/logger"
 )
+
+// TrustedProxies 可信代理 IP 列表（CIDR 格式）
+// 生产环境应从配置加载
+var TrustedProxies = []string{
+	"127.0.0.0/8",    // localhost
+	"10.0.0.0/8",     // 私有网络
+	"172.16.0.0/12",  // 私有网络
+	"192.168.0.0/16", // 私有网络
+}
+
+var trustedNets []*net.IPNet
+
+func init() {
+	for _, cidr := range TrustedProxies {
+		_, ipNet, err := net.ParseCIDR(cidr)
+		if err == nil {
+			trustedNets = append(trustedNets, ipNet)
+		}
+	}
+}
+
+// isTrustedProxy 检查 IP 是否是可信代理
+func isTrustedProxy(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil {
+		return false
+	}
+	for _, ipNet := range trustedNets {
+		if ipNet.Contains(parsedIP) {
+			return true
+		}
+	}
+	return false
+}
+
+// GetRealClientIP 获取真实客户端 IP（考虑可信代理）
+// 安全策略：只有当直连 IP 是可信代理时，才信任 X-Forwarded-For
+func GetRealClientIP(c *app.RequestContext) string {
+	// 获取直连 IP
+	remoteIP := c.RemoteAddr().String()
+	if host, _, err := net.SplitHostPort(remoteIP); err == nil {
+		remoteIP = host
+	}
+
+	// 如果直连 IP 不是可信代理，直接返回
+	if !isTrustedProxy(remoteIP) {
+		return remoteIP
+	}
+
+	// 检查 X-Forwarded-For（只取第一个非可信代理 IP）
+	xff := string(c.GetHeader("X-Forwarded-For"))
+	if xff != "" {
+		ips := strings.Split(xff, ",")
+		// 从右往左遍历，找到第一个非可信代理 IP
+		for i := len(ips) - 1; i >= 0; i-- {
+			ip := strings.TrimSpace(ips[i])
+			if ip != "" && !isTrustedProxy(ip) {
+				return ip
+			}
+		}
+	}
+
+	// 检查 X-Real-IP
+	xri := string(c.GetHeader("X-Real-IP"))
+	if xri != "" {
+		xri = strings.TrimSpace(xri)
+		if !isTrustedProxy(xri) {
+			return xri
+		}
+	}
+
+	return remoteIP
+}
 
 // RateLimiterConfig 限流配置
 type RateLimiterConfig struct {
@@ -74,17 +149,36 @@ func NewIPRateLimiter(config *RateLimiterConfig) *IPRateLimiter {
 
 // cleanup 定期清理过期的 IP
 func (i *IPRateLimiter) cleanup() {
+	// Panic recovery 防止后台协程意外退出
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Errorf("rate limiter cleanup panic recovered: %v", r)
+			// 重启清理协程
+			go i.cleanup()
+		}
+	}()
+
 	ticker := time.NewTicker(cleanupInterval)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			i.evictExpired()
+			i.safeEvictExpired()
 		case <-i.stopChan:
 			return
 		}
 	}
+}
+
+// safeEvictExpired 安全地驱逐过期 IP（带 panic 保护）
+func (i *IPRateLimiter) safeEvictExpired() {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Errorf("rate limiter evictExpired panic: %v", r)
+		}
+	}()
+	i.evictExpired()
 }
 
 // evictExpired 驱逐过期的 IP
@@ -199,7 +293,8 @@ func RateLimit(config *RateLimiterConfig) app.HandlerFunc {
 	limiter := getDefaultIPLimiter(config)
 
 	return func(ctx context.Context, c *app.RequestContext) {
-		ip := c.ClientIP()
+		// 使用安全的 IP 获取方式，防止 IP 欺骗
+		ip := GetRealClientIP(c)
 		if !limiter.GetLimiter(ip).Allow() {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, map[string]interface{}{
 				"code":    4029,
@@ -239,7 +334,8 @@ func distributedRateLimitMiddleware(limiter DistributedLimiter, name string) app
 	fallbackLimiter := getDefaultIPLimiter(nil)
 
 	return func(ctx context.Context, c *app.RequestContext) {
-		ip := c.ClientIP()
+		// 使用安全的 IP 获取方式，防止 IP 欺骗
+		ip := GetRealClientIP(c)
 		allowed, err := limiter.Allow(ctx, ip)
 		if err != nil {
 			// Redis 出错时降级到本地限流

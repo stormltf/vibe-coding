@@ -168,6 +168,35 @@ func (d *UserDAO) DeleteBatch(ctx context.Context, ids []uint64) error {
 	return database.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&model.User{}).Error
 }
 
+// Search 搜索用户（按名称或邮箱模糊匹配）
+func (d *UserDAO) Search(ctx context.Context, keyword string, offset, limit int) ([]model.User, int64, error) {
+	var total int64
+	pattern := "%" + keyword + "%"
+
+	db := database.DB.WithContext(ctx).Model(&model.User{}).
+		Where("name LIKE ? OR email LIKE ?", pattern, pattern)
+
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if total == 0 {
+		return []model.User{}, 0, nil
+	}
+
+	users := make([]model.User, 0, limit)
+	if err := database.DB.WithContext(ctx).
+		Where("name LIKE ? OR email LIKE ?", pattern, pattern).
+		Order("id DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}
+
 // ExistsByEmail 检查邮箱是否存在（利用索引，只查询 1 条）
 func (d *UserDAO) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	var count int64

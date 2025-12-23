@@ -253,6 +253,11 @@ func (s *UserService) cachePageResult(ctx context.Context, cacheKey string, resu
 	}
 }
 
+// Search 搜索用户（不使用缓存，因为搜索条件多变）
+func (s *UserService) Search(ctx context.Context, keyword string, offset, limit int) ([]model.User, int64, error) {
+	return s.userDAO.Search(ctx, keyword, offset, limit)
+}
+
 // GetByIDs 批量获取用户（带缓存）
 func (s *UserService) GetByIDs(ctx context.Context, ids []uint64) ([]model.User, error) {
 	if len(ids) == 0 {
@@ -316,22 +321,30 @@ func (s *UserService) Create(ctx context.Context, user *model.User) error {
 }
 
 func (s *UserService) Update(ctx context.Context, user *model.User) error {
+	// 先清除缓存，避免竞态条件：更新后、缓存失效前读到旧数据
+	s.invalidateUserCache(ctx, user.ID)
+
 	if err := s.userDAO.Update(ctx, user); err != nil {
 		return err
 	}
 
-	// 清除相关缓存
+	// 双重失效：确保数据库更新后缓存也被清除
+	// 这样即使在更新过程中有请求回填了旧缓存，也会被清除
 	s.invalidateUserCache(ctx, user.ID)
 
 	return nil
 }
 
 func (s *UserService) Delete(ctx context.Context, id uint64) error {
+	// 先清除缓存，避免竞态条件
+	s.invalidateUserCache(ctx, id)
+	s.invalidatePageCache(ctx)
+
 	if err := s.userDAO.Delete(ctx, id); err != nil {
 		return err
 	}
 
-	// 清除相关缓存
+	// 双重失效：确保删除后缓存也被清除
 	s.invalidateUserCache(ctx, id)
 	s.invalidatePageCache(ctx)
 

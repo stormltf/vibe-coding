@@ -106,6 +106,9 @@ func Init(cfg *Config) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := sqlDB.PingContext(ctx); err != nil {
+		// 连接验证失败时，关闭连接避免资源泄漏
+		_ = sqlDB.Close()
+		DB = nil
 		return fmt.Errorf("failed to ping mysql: %w", err)
 	}
 

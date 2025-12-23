@@ -11,7 +11,8 @@ type User struct {
 	ID        uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name      string    `json:"name" gorm:"type:varchar(100);not null;index:idx_name"`
 	Age       int       `json:"age" gorm:"default:0"`
-	Email     string    `json:"email" gorm:"type:varchar(255);uniqueIndex:idx_email"`
+	Email     string    `json:"email" gorm:"type:varchar(255);not null;uniqueIndex:idx_email"`
+	Password  string    `json:"-" gorm:"type:varchar(255);not null"` // 密码不返回给前端
 	CreatedAt time.Time `json:"created_at" gorm:"index:idx_created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

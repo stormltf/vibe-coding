@@ -1,0 +1,17 @@
+{
+  "name": "vibe-agent-server",
+  "version": "1.0.0",
+  "description": "Claude Agent SDK server for Vibe Coding",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "uuid": "^9.0.0"
+  }
+}
