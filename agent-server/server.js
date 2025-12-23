@@ -13,7 +13,7 @@ import os from 'os';
 import jwt from 'jsonwebtoken';
 
 // JWT 配置 - 必须与 Go 后端保持一致
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-at-least-32-chars!';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-not-for-production';
 const JWT_ISSUER = process.env.JWT_ISSUER || 'test-tt';
 
 const app = express();
