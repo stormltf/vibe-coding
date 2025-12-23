@@ -14,7 +14,6 @@ func Tracing(serviceName string) app.HandlerFunc {
 	tracer := otel.Tracer(serviceName)
 
 	return func(ctx context.Context, c *app.RequestContext) {
-
 		// 创建 span
 		spanName := string(c.Method()) + " " + string(c.Path())
 		ctx, span := tracer.Start(ctx, spanName,
@@ -44,25 +43,4 @@ func Tracing(serviceName string) app.HandlerFunc {
 			span.SetAttributes(attribute.Bool("error", true))
 		}
 	}
-}
-
-// headerCarrier 实现 propagation.TextMapCarrier
-type headerCarrier struct {
-	c *app.RequestContext
-}
-
-func (h *headerCarrier) Get(key string) string {
-	return string(h.c.GetHeader(key))
-}
-
-func (h *headerCarrier) Set(key string, value string) {
-	h.c.Request.Header.Set(key, value)
-}
-
-func (h *headerCarrier) Keys() []string {
-	var keys []string
-	h.c.Request.Header.VisitAll(func(key, value []byte) {
-		keys = append(keys, string(key))
-	})
-	return keys
 }

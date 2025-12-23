@@ -2,7 +2,6 @@ package logger
 
 import (
 	"context"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -143,15 +142,6 @@ func createFileCore(level zapcore.Level, cfg *Config) zapcore.Core {
 	return zapcore.NewCore(encoder, zapcore.AddSync(writer), level)
 }
 
-// 创建同时输出到多个 writer 的 Core
-func createMultiWriterCore(level zapcore.Level, encoder zapcore.Encoder, writers ...io.Writer) zapcore.Core {
-	var syncs []zapcore.WriteSyncer
-	for _, w := range writers {
-		syncs = append(syncs, zapcore.AddSync(w))
-	}
-	return zapcore.NewCore(encoder, zapcore.NewMultiWriteSyncer(syncs...), level)
-}
-
 func getLogLevel(level string) zapcore.Level {
 	switch level {
 	case "debug":
@@ -187,61 +177,89 @@ var (
 // ============ 日志方法 ============
 
 func Debug(msg string, fields ...Field) {
-	Log.Debug(msg, fields...)
+	if Log != nil {
+		Log.Debug(msg, fields...)
+	}
 }
 
 func Info(msg string, fields ...Field) {
-	Log.Info(msg, fields...)
+	if Log != nil {
+		Log.Info(msg, fields...)
+	}
 }
 
 func Warn(msg string, fields ...Field) {
-	Log.Warn(msg, fields...)
+	if Log != nil {
+		Log.Warn(msg, fields...)
+	}
 }
 
 func Error(msg string, fields ...Field) {
-	Log.Error(msg, fields...)
+	if Log != nil {
+		Log.Error(msg, fields...)
+	}
 }
 
 func Fatal(msg string, fields ...Field) {
-	Log.Fatal(msg, fields...)
+	if Log != nil {
+		Log.Fatal(msg, fields...)
+	}
 }
 
 // ============ 简化版日志（key-value 格式）============
 
 // Debugf 使用 key-value 对打印日志：Debugf("msg", "key1", val1, "key2", val2)
 func Debugf(msg string, keysAndValues ...interface{}) {
-	sugar.Debugw(msg, keysAndValues...)
+	if sugar != nil {
+		sugar.Debugw(msg, keysAndValues...)
+	}
 }
 
 // Infof 使用 key-value 对打印日志：Infof("msg", "key1", val1, "key2", val2)
 func Infof(msg string, keysAndValues ...interface{}) {
-	sugar.Infow(msg, keysAndValues...)
+	if sugar != nil {
+		sugar.Infow(msg, keysAndValues...)
+	}
 }
 
 // Warnf 使用 key-value 对打印日志：Warnf("msg", "key1", val1, "key2", val2)
 func Warnf(msg string, keysAndValues ...interface{}) {
-	sugar.Warnw(msg, keysAndValues...)
+	if sugar != nil {
+		sugar.Warnw(msg, keysAndValues...)
+	}
 }
 
 // Errorf 使用 key-value 对打印日志：Errorf("msg", "key1", val1, "key2", val2)
 func Errorf(msg string, keysAndValues ...interface{}) {
-	sugar.Errorw(msg, keysAndValues...)
+	if sugar != nil {
+		sugar.Errorw(msg, keysAndValues...)
+	}
 }
 
 // With 返回带有预设字段的 logger
 func With(fields ...Field) *zap.Logger {
+	if Log == nil {
+		return zap.NewNop()
+	}
 	return Log.With(fields...)
 }
 
 func Sync() {
-	_ = Log.Sync()
-	_ = sugar.Sync()
+	if Log != nil {
+		_ = Log.Sync()
+	}
+	if sugar != nil {
+		_ = sugar.Sync()
+	}
 }
 
 // ============ 带 Context 的日志方法（自动携带 logid）============
 
 // Ctx 从 context 创建带 logid 的 logger
 func Ctx(ctx context.Context) *zap.Logger {
+	if Log == nil {
+		return zap.NewNop()
+	}
 	logID := getLogIDFromCtx(ctx)
 	if logID != "" {
 		return Log.With(zap.String("logid", logID))
@@ -251,6 +269,9 @@ func Ctx(ctx context.Context) *zap.Logger {
 
 // CtxSugar 从 context 创建带 logid 的 sugar logger
 func CtxSugar(ctx context.Context) *zap.SugaredLogger {
+	if sugar == nil {
+		return zap.NewNop().Sugar()
+	}
 	logID := getLogIDFromCtx(ctx)
 	if logID != "" {
 		return sugar.With("logid", logID)

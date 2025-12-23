@@ -15,12 +15,12 @@ var (
 
 // Config 熔断器配置
 type Config struct {
-	Name          string        // 熔断器名称
-	MaxRequests   uint32        // 半开状态下允许的最大请求数
-	Interval      time.Duration // 统计周期
-	Timeout       time.Duration // 熔断超时时间（从开启到半开）
-	FailureRatio  float64       // 触发熔断的失败率阈值
-	MinRequests   uint32        // 触发熔断的最小请求数
+	Name         string        // 熔断器名称
+	MaxRequests  uint32        // 半开状态下允许的最大请求数
+	Interval     time.Duration // 统计周期
+	Timeout      time.Duration // 熔断超时时间（从开启到半开）
+	FailureRatio float64       // 触发熔断的失败率阈值
+	MinRequests  uint32        // 触发熔断的最小请求数
 }
 
 // DefaultConfig 默认配置

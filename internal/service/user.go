@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
+	"golang.org/x/sync/singleflight"
+
 	"github.com/test-tt/internal/dao"
 	"github.com/test-tt/internal/model"
 	"github.com/test-tt/pkg/cache"
 	"github.com/test-tt/pkg/logger"
-	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -39,69 +40,90 @@ func NewUserService() *UserService {
 func (s *UserService) GetByID(ctx context.Context, id uint64) (*model.User, error) {
 	cacheKey := fmt.Sprintf(userCacheKey, id)
 
-	// L1: 本地缓存（最快）
-	if lc := cache.GetLocalCache(); lc != nil {
-		if val, ok := lc.Get(cacheKey); ok {
-			if user, ok := val.(*model.User); ok {
-				return user, nil
-			}
-		}
+	// L1: 本地缓存
+	if user := s.getUserFromLocalCache(cacheKey); user != nil {
+		return user, nil
 	}
 
 	// L2: Redis 缓存
-	if cache.RDB != nil {
-		cached, err := cache.Get(ctx, cacheKey)
-		if err == nil && cached != "" {
-			var user model.User
-			if err := sonic.UnmarshalString(cached, &user); err == nil {
-				// 回填本地缓存
-				if lc := cache.GetLocalCache(); lc != nil {
-					lc.SetWithTTL(cacheKey, &user, 1, localCacheTTL)
-				}
-				return &user, nil
-			}
-		}
+	if user := s.getUserFromRedis(ctx, cacheKey); user != nil {
+		return user, nil
 	}
 
-	// 使用 singleflight 防止缓存击穿
+	// L3: 使用 singleflight 防止缓存击穿，从数据库获取
 	result, err, _ := sf.Do(cacheKey, func() (interface{}, error) {
 		// 双重检查 Redis
-		if cache.RDB != nil {
-			cached, err := cache.Get(ctx, cacheKey)
-			if err == nil && cached != "" {
-				var user model.User
-				if err := sonic.UnmarshalString(cached, &user); err == nil {
-					return &user, nil
-				}
-			}
+		if user := s.getUserFromRedis(ctx, cacheKey); user != nil {
+			return user, nil
 		}
-
-		// L3: 从数据库获取
-		user, err := s.userDAO.GetByID(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-
-		// 写入 Redis 缓存
-		if cache.RDB != nil {
-			data, _ := sonic.MarshalString(user)
-			if err := cache.Set(ctx, cacheKey, data, cacheTTL); err != nil {
-				logger.WarnCtxf(ctx, "failed to cache user", "key", cacheKey, "error", err)
-			}
-		}
-
-		// 写入本地缓存
-		if lc := cache.GetLocalCache(); lc != nil {
-			lc.SetWithTTL(cacheKey, user, 1, localCacheTTL)
-		}
-
-		return user, nil
+		return s.loadUserFromDB(ctx, id, cacheKey)
 	})
 
 	if err != nil {
 		return nil, err
 	}
 	return result.(*model.User), nil
+}
+
+// getUserFromLocalCache 从本地缓存获取用户
+func (s *UserService) getUserFromLocalCache(cacheKey string) *model.User {
+	lc := cache.GetLocalCache()
+	if lc == nil {
+		return nil
+	}
+	if val, ok := lc.Get(cacheKey); ok {
+		if user, ok := val.(*model.User); ok {
+			return user
+		}
+	}
+	return nil
+}
+
+// getUserFromRedis 从 Redis 缓存获取用户
+//
+//nolint:dupl // 与 getPageFromRedis 结构相似但类型不同，保持类型安全
+func (s *UserService) getUserFromRedis(ctx context.Context, cacheKey string) *model.User {
+	if cache.RDB == nil {
+		return nil
+	}
+	cached, err := cache.Get(ctx, cacheKey)
+	if err != nil || cached == "" {
+		return nil
+	}
+	var user model.User
+	if err := sonic.UnmarshalString(cached, &user); err != nil {
+		return nil
+	}
+	// 回填本地缓存
+	if lc := cache.GetLocalCache(); lc != nil {
+		lc.SetWithTTL(cacheKey, &user, 1, localCacheTTL)
+	}
+	return &user
+}
+
+// loadUserFromDB 从数据库加载用户并写入缓存
+func (s *UserService) loadUserFromDB(ctx context.Context, id uint64, cacheKey string) (*model.User, error) {
+	user, err := s.userDAO.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.cacheUser(ctx, cacheKey, user)
+	return user, nil
+}
+
+// cacheUser 将用户写入缓存
+func (s *UserService) cacheUser(ctx context.Context, cacheKey string, user *model.User) {
+	// 写入 Redis 缓存
+	if cache.RDB != nil {
+		data, _ := sonic.MarshalString(user)
+		if err := cache.Set(ctx, cacheKey, data, cacheTTL); err != nil {
+			logger.WarnCtxf(ctx, "failed to cache user", "key", cacheKey, "error", err)
+		}
+	}
+	// 写入本地缓存
+	if lc := cache.GetLocalCache(); lc != nil {
+		lc.SetWithTTL(cacheKey, user, 1, localCacheTTL)
+	}
 }
 
 func (s *UserService) GetAll(ctx context.Context) ([]model.User, error) {
@@ -139,67 +161,22 @@ func (s *UserService) GetPage(ctx context.Context, offset, limit int) ([]model.U
 	cacheKey := fmt.Sprintf(userPageCacheKey, page, limit)
 
 	// L1: 本地缓存
-	if lc := cache.GetLocalCache(); lc != nil {
-		if val, ok := lc.Get(cacheKey); ok {
-			if result, ok := val.(*model.UserListResult); ok {
-				return result.Users, result.Total, nil
-			}
-		}
+	if result := s.getPageFromLocalCache(cacheKey); result != nil {
+		return result.Users, result.Total, nil
 	}
 
 	// L2: Redis 缓存
-	if cache.RDB != nil {
-		cached, err := cache.Get(ctx, cacheKey)
-		if err == nil && cached != "" {
-			var result model.UserListResult
-			if err := sonic.UnmarshalString(cached, &result); err == nil {
-				// 回填本地缓存
-				if lc := cache.GetLocalCache(); lc != nil {
-					lc.SetWithTTL(cacheKey, &result, 1, localCacheTTL)
-				}
-				return result.Users, result.Total, nil
-			}
-		}
+	if result := s.getPageFromRedis(ctx, cacheKey); result != nil {
+		return result.Users, result.Total, nil
 	}
 
-	// 使用 singleflight 防止缓存击穿
+	// L3: 使用 singleflight 防止缓存击穿
 	result, err, _ := sf.Do(cacheKey, func() (interface{}, error) {
 		// 双重检查 Redis
-		if cache.RDB != nil {
-			cached, err := cache.Get(ctx, cacheKey)
-			if err == nil && cached != "" {
-				var result model.UserListResult
-				if err := sonic.UnmarshalString(cached, &result); err == nil {
-					return &result, nil
-				}
-			}
+		if r := s.getPageFromRedis(ctx, cacheKey); r != nil {
+			return r, nil
 		}
-
-		// L3: 从数据库获取
-		users, total, err := s.userDAO.GetPage(ctx, offset, limit)
-		if err != nil {
-			return nil, err
-		}
-
-		listResult := &model.UserListResult{
-			Users: users,
-			Total: total,
-		}
-
-		// 写入 Redis 缓存
-		if cache.RDB != nil {
-			data, _ := sonic.MarshalString(listResult)
-			if err := cache.Set(ctx, cacheKey, data, cacheTTL); err != nil {
-				logger.WarnCtxf(ctx, "failed to cache user page", "key", cacheKey, "error", err)
-			}
-		}
-
-		// 写入本地缓存
-		if lc := cache.GetLocalCache(); lc != nil {
-			lc.SetWithTTL(cacheKey, listResult, 1, localCacheTTL)
-		}
-
-		return listResult, nil
+		return s.loadPageFromDB(ctx, offset, limit, cacheKey)
 	})
 
 	if err != nil {
@@ -210,10 +187,76 @@ func (s *UserService) GetPage(ctx context.Context, offset, limit int) ([]model.U
 	return r.Users, r.Total, nil
 }
 
+// getPageFromLocalCache 从本地缓存获取分页结果
+func (s *UserService) getPageFromLocalCache(cacheKey string) *model.UserListResult {
+	lc := cache.GetLocalCache()
+	if lc == nil {
+		return nil
+	}
+	if val, ok := lc.Get(cacheKey); ok {
+		if result, ok := val.(*model.UserListResult); ok {
+			return result
+		}
+	}
+	return nil
+}
+
+// getPageFromRedis 从 Redis 缓存获取分页结果
+//
+//nolint:dupl // 与 getUserFromRedis 结构相似但类型不同，保持类型安全
+func (s *UserService) getPageFromRedis(ctx context.Context, cacheKey string) *model.UserListResult {
+	if cache.RDB == nil {
+		return nil
+	}
+	cached, err := cache.Get(ctx, cacheKey)
+	if err != nil || cached == "" {
+		return nil
+	}
+	var result model.UserListResult
+	if err := sonic.UnmarshalString(cached, &result); err != nil {
+		return nil
+	}
+	// 回填本地缓存
+	if lc := cache.GetLocalCache(); lc != nil {
+		lc.SetWithTTL(cacheKey, &result, 1, localCacheTTL)
+	}
+	return &result
+}
+
+// loadPageFromDB 从数据库加载分页数据并写入缓存
+func (s *UserService) loadPageFromDB(ctx context.Context, offset, limit int, cacheKey string) (*model.UserListResult, error) {
+	users, total, err := s.userDAO.GetPage(ctx, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	listResult := &model.UserListResult{
+		Users: users,
+		Total: total,
+	}
+	s.cachePageResult(ctx, cacheKey, listResult)
+	return listResult, nil
+}
+
+// cachePageResult 将分页结果写入缓存
+func (s *UserService) cachePageResult(ctx context.Context, cacheKey string, result *model.UserListResult) {
+	// 写入 Redis 缓存
+	if cache.RDB != nil {
+		data, _ := sonic.MarshalString(result)
+		if err := cache.Set(ctx, cacheKey, data, cacheTTL); err != nil {
+			logger.WarnCtxf(ctx, "failed to cache user page", "key", cacheKey, "error", err)
+		}
+	}
+	// 写入本地缓存
+	if lc := cache.GetLocalCache(); lc != nil {
+		lc.SetWithTTL(cacheKey, result, 1, localCacheTTL)
+	}
+}
+
 // GetByIDs 批量获取用户（带缓存）
 func (s *UserService) GetByIDs(ctx context.Context, ids []uint64) ([]model.User, error) {
 	if len(ids) == 0 {
-		return nil, nil
+		return []model.User{}, nil // 返回空切片而非 nil，便于调用方判断
 	}
 
 	// 尝试从缓存批量获取

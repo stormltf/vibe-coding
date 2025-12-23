@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+	"go.uber.org/zap"
+
 	"github.com/test-tt/config"
 	"github.com/test-tt/pkg/cache"
 	"github.com/test-tt/pkg/database"
 	"github.com/test-tt/pkg/logger"
 	"github.com/test-tt/pkg/response"
-	"go.uber.org/zap"
 )
 
 type PingHandler struct{}
@@ -84,54 +85,12 @@ func (h *PingHandler) checkHealth(ctx context.Context) HealthStatus {
 		Timestamp: time.Now().Unix(),
 	}
 
-	mysqlOK := false
-	redisOK := false
-
-	// 检查 MySQL 连接
-	if database.DB != nil {
-		sqlDB, err := database.DB.DB()
-		if err == nil {
-			// 使用带超时的 Ping
-			pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			defer cancel()
-			if sqlDB.PingContext(pingCtx) == nil {
-				status.MySQL = "connected"
-				mysqlOK = true
-			}
-		}
-	}
-
-	// 检查 Redis 连接
-	if cache.RDB != nil {
-		// 使用带超时的 Ping
-		pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-		defer cancel()
-		if _, err := cache.RDB.Ping(pingCtx).Result(); err == nil {
-			status.Redis = "connected"
-			redisOK = true
-		}
-	}
+	// 检查各组件
+	mysqlOK := h.checkMySQL(ctx, &status)
+	redisOK := h.checkRedis(ctx, &status)
 
 	// 确定整体状态
-	cfg := config.Cfg
-	if cfg != nil && cfg.IsProd() {
-		// 生产环境：MySQL 和 Redis 都是必需的
-		if !mysqlOK || !redisOK {
-			status.Status = "unhealthy"
-		}
-	} else {
-		// 开发环境：只要有一个可用就是降级状态，都不可用才是不健康
-		if !mysqlOK && !redisOK {
-			// 如果 DB 和 Redis 都未配置（nil），则认为是健康的（无状态模式）
-			if database.DB == nil && cache.RDB == nil {
-				status.Status = "healthy"
-			} else {
-				status.Status = "unhealthy"
-			}
-		} else if !mysqlOK || !redisOK {
-			status.Status = "degraded"
-		}
-	}
+	status.Status = h.determineOverallStatus(mysqlOK, redisOK)
 
 	logger.Info("health check completed",
 		zap.String("status", status.Status),
@@ -139,6 +98,70 @@ func (h *PingHandler) checkHealth(ctx context.Context) HealthStatus {
 		zap.String("redis", status.Redis))
 
 	return status
+}
+
+// checkMySQL 检查 MySQL 连接状态
+func (h *PingHandler) checkMySQL(ctx context.Context, status *HealthStatus) bool {
+	if database.DB == nil {
+		return false
+	}
+
+	sqlDB, err := database.DB.DB()
+	if err != nil {
+		return false
+	}
+
+	pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	if sqlDB.PingContext(pingCtx) == nil {
+		status.MySQL = "connected"
+		return true
+	}
+	return false
+}
+
+// checkRedis 检查 Redis 连接状态
+func (h *PingHandler) checkRedis(ctx context.Context, status *HealthStatus) bool {
+	if cache.RDB == nil {
+		return false
+	}
+
+	pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	if _, err := cache.RDB.Ping(pingCtx).Result(); err == nil {
+		status.Redis = "connected"
+		return true
+	}
+	return false
+}
+
+// determineOverallStatus 根据组件状态确定整体健康状态
+func (h *PingHandler) determineOverallStatus(mysqlOK, redisOK bool) string {
+	cfg := config.Cfg
+
+	// 生产环境：所有依赖都是必需的
+	if cfg != nil && cfg.IsProd() {
+		if mysqlOK && redisOK {
+			return "healthy"
+		}
+		return "unhealthy"
+	}
+
+	// 开发环境：更宽松的判断
+	bothConfigured := database.DB != nil || cache.RDB != nil
+	if !bothConfigured {
+		return "healthy" // 无状态模式
+	}
+
+	if mysqlOK && redisOK {
+		return "healthy"
+	}
+	if mysqlOK || redisOK {
+		return "degraded"
+	}
+	return "unhealthy"
 }
 
 // checkHealthDetailed 详细健康检查

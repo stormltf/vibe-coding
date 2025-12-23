@@ -34,13 +34,13 @@ func DefaultConfig() *Config {
 	}
 	return &Config{
 		PoolSize:     poolSize,
-		MinIdleConns: 20,               // 最小空闲连接
-		MaxIdleConns: poolSize / 2,      // 最大空闲连接
-		DialTimeout:  3 * time.Second,   // 连接超时
-		ReadTimeout:  1 * time.Second,   // 读超时
-		WriteTimeout: 1 * time.Second,   // 写超时
-		PoolTimeout:  2 * time.Second,   // 获取连接超时
-		MaxRetries:   3,                 // 最大重试次数
+		MinIdleConns: 20,              // 最小空闲连接
+		MaxIdleConns: poolSize / 2,    // 最大空闲连接
+		DialTimeout:  3 * time.Second, // 连接超时
+		ReadTimeout:  1 * time.Second, // 读超时
+		WriteTimeout: 1 * time.Second, // 写超时
+		PoolTimeout:  2 * time.Second, // 获取连接超时
+		MaxRetries:   3,               // 最大重试次数
 	}
 }
 
@@ -89,9 +89,9 @@ func Init(cfg *Config) error {
 		PoolTimeout:  cfg.PoolTimeout,  // 从连接池获取连接超时
 
 		// 重试配置
-		MaxRetries:      cfg.MaxRetries,           // 命令最大重试次数
-		MinRetryBackoff: 8 * time.Millisecond,     // 最小重试间隔
-		MaxRetryBackoff: 512 * time.Millisecond,   // 最大重试间隔
+		MaxRetries:      cfg.MaxRetries,         // 命令最大重试次数
+		MinRetryBackoff: 8 * time.Millisecond,   // 最小重试间隔
+		MaxRetryBackoff: 512 * time.Millisecond, // 最大重试间隔
 
 		// 连接健康检查
 		ConnMaxIdleTime: 5 * time.Minute,  // 空闲连接最大存活时间

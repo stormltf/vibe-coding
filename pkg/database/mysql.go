@@ -29,8 +29,8 @@ type Config struct {
 // DefaultConfig 返回优化后的默认配置
 func DefaultConfig() *Config {
 	return &Config{
-		MaxIdleConns:    50,              // 空闲连接数（建议: CPU核心数 * 2）
-		MaxOpenConns:    100,             // 最大连接数（建议: 不超过 MySQL max_connections / 应用实例数）
+		MaxIdleConns:    50,               // 空闲连接数（建议: CPU核心数 * 2）
+		MaxOpenConns:    100,              // 最大连接数（建议: 不超过 MySQL max_connections / 应用实例数）
 		ConnMaxLifetime: 30 * time.Minute, // 连接最大生存时间（建议: 小于 MySQL wait_timeout）
 		ConnMaxIdleTime: 10 * time.Minute, // 空闲连接最大生存时间
 		Charset:         "utf8mb4",
@@ -78,10 +78,10 @@ func Init(cfg *Config) error {
 		SkipInitializeWithVersion: false, // 根据版本自动配置
 	}), &gorm.Config{
 		Logger:                                   logger.Default.LogMode(cfg.LogLevel),
-		SkipDefaultTransaction:                   true,  // 跳过默认事务，提升性能
-		PrepareStmt:                              true,  // 预编译语句缓存
-		DisableForeignKeyConstraintWhenMigrating: true,  // 禁用外键约束
-		QueryFields:                              true,  // 使用字段名查询，避免 SELECT *
+		SkipDefaultTransaction:                   true, // 跳过默认事务，提升性能
+		PrepareStmt:                              true, // 预编译语句缓存
+		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束
+		QueryFields:                              true, // 使用字段名查询，避免 SELECT *
 	})
 	if err != nil {
 		return fmt.Errorf("failed to connect mysql: %w", err)

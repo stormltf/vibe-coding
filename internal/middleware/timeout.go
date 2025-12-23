@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
@@ -40,13 +41,13 @@ func Timeout(cfg *TimeoutConfig) app.HandlerFunc {
 
 		// 用于通知处理完成
 		done := make(chan struct{})
+		// 原子标记：是否已超时
+		var timedOut int32
 
 		go func() {
 			defer func() {
-				// 防止 panic 导致 goroutine 泄露
-				if r := recover(); r != nil {
-					// 已有 recovery 中间件处理，这里只需确保 channel 关闭
-				}
+				// 防止 panic 导致 goroutine 泄露，recovery 中间件会处理实际的 panic
+				_ = recover()
 				close(done)
 			}()
 
@@ -59,15 +60,15 @@ func Timeout(cfg *TimeoutConfig) app.HandlerFunc {
 			// 正常完成
 			return
 		case <-ctx.Done():
+			// 标记超时
+			atomic.StoreInt32(&timedOut, 1)
+
 			// 超时处理
 			if ctx.Err() == context.DeadlineExceeded {
-				// 只有在响应未开始写入时才返回超时响应
-				if !c.Response.HasBodyBytes() {
-					c.AbortWithStatusJSON(http.StatusRequestTimeout, cfg.Response)
-				}
+				// 立即返回超时响应（不等待 goroutine）
+				// 注意：后台 goroutine 可能继续执行，但通过 context 已发送取消信号
+				c.AbortWithStatusJSON(http.StatusRequestTimeout, cfg.Response)
 			}
-			// 注意：此时 goroutine 可能仍在执行，但已通过 context 发送取消信号
-			// 业务代码应该检查 ctx.Done() 并尽快退出
 			return
 		}
 	}

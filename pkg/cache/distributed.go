@@ -97,7 +97,9 @@ func (d *DistributedCache) Get(ctx context.Context, key string, loader func() (s
 	}
 
 	if locked {
-		defer d.Unlock(ctx, key)
+		defer func() {
+			_ = d.Unlock(ctx, key) // 忽略 unlock 错误，因为锁会自动过期
+		}()
 
 		// 再次检查缓存（双重检查）
 		val, err = d.rdb.Get(ctx, key).Result()
@@ -109,8 +111,8 @@ func (d *DistributedCache) Get(ctx context.Context, key string, loader func() (s
 		data, err := loader()
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
-				// 设置空值缓存
-				d.SetNullCache(ctx, key)
+				// 设置空值缓存（忽略错误，非关键操作）
+				_ = d.SetNullCache(ctx, key)
 			}
 			return "", err
 		}
@@ -194,8 +196,8 @@ func (r *DistributedRateLimiter) AllowN(ctx context.Context, key string, n int) 
 type TokenBucketLimiter struct {
 	rdb      *redis.Client
 	prefix   string
-	rate     float64       // 每秒生成的令牌数
-	capacity int64         // 桶容量
+	rate     float64 // 每秒生成的令牌数
+	capacity int64   // 桶容量
 }
 
 // NewTokenBucketLimiter 创建令牌桶限流器

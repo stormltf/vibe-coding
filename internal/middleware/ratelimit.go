@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+	"golang.org/x/time/rate"
+
 	"github.com/test-tt/pkg/cache"
 	"github.com/test-tt/pkg/logger"
-	"golang.org/x/time/rate"
 )
 
 // RateLimiterConfig 限流配置
@@ -164,34 +165,38 @@ func (i *IPRateLimiter) Size() int {
 	return len(i.ips)
 }
 
-// 全局限流器注册表，用于优雅关闭时清理
+// 全局限流器单例，避免重复创建
 var (
-	globalLimiters   []*IPRateLimiter
-	globalLimitersMu sync.Mutex
+	defaultIPLimiter     *IPRateLimiter
+	defaultIPLimiterOnce sync.Once
+	defaultIPLimiterMu   sync.RWMutex
 )
 
-// registerLimiter 注册限流器到全局注册表
-func registerLimiter(l *IPRateLimiter) {
-	globalLimitersMu.Lock()
-	defer globalLimitersMu.Unlock()
-	globalLimiters = append(globalLimiters, l)
+// getDefaultIPLimiter 获取或创建默认的 IP 限流器（单例）
+func getDefaultIPLimiter(config *RateLimiterConfig) *IPRateLimiter {
+	defaultIPLimiterOnce.Do(func() {
+		if config == nil {
+			config = DefaultRateLimiterConfig()
+		}
+		defaultIPLimiter = NewIPRateLimiter(config)
+	})
+	return defaultIPLimiter
 }
 
 // StopAllRateLimiters 停止所有限流器的后台清理 goroutine
 // 应在服务关闭时调用
 func StopAllRateLimiters() {
-	globalLimitersMu.Lock()
-	defer globalLimitersMu.Unlock()
-	for _, l := range globalLimiters {
-		l.Stop()
+	defaultIPLimiterMu.Lock()
+	defer defaultIPLimiterMu.Unlock()
+	if defaultIPLimiter != nil {
+		defaultIPLimiter.Stop()
+		defaultIPLimiter = nil
 	}
-	globalLimiters = nil
 }
 
-// RateLimit 限流中间件
+// RateLimit 限流中间件（使用单例限流器）
 func RateLimit(config *RateLimiterConfig) app.HandlerFunc {
-	limiter := NewIPRateLimiter(config)
-	registerLimiter(limiter)
+	limiter := getDefaultIPLimiter(config)
 
 	return func(ctx context.Context, c *app.RequestContext) {
 		ip := c.ClientIP()
@@ -222,14 +227,30 @@ func GlobalRateLimit(r rate.Limit, burst int) app.HandlerFunc {
 	}
 }
 
-// DistributedRateLimit 分布式限流中间件（无状态服务使用）
-// 使用 Redis 存储限流状态，支持多实例部署
-func DistributedRateLimit(limiter *cache.DistributedRateLimiter) app.HandlerFunc {
+// DistributedLimiter 分布式限流器接口
+type DistributedLimiter interface {
+	Allow(ctx context.Context, key string) (bool, error)
+}
+
+// distributedRateLimitMiddleware 创建分布式限流中间件的通用实现
+// Redis 故障时降级到本地限流，而非完全放行
+func distributedRateLimitMiddleware(limiter DistributedLimiter, name string) app.HandlerFunc {
+	// 本地限流器作为降级方案
+	fallbackLimiter := getDefaultIPLimiter(nil)
+
 	return func(ctx context.Context, c *app.RequestContext) {
 		ip := c.ClientIP()
 		allowed, err := limiter.Allow(ctx, ip)
 		if err != nil {
-			// Redis 出错时放行，避免服务不可用
+			// Redis 出错时降级到本地限流
+			logger.WarnCtxf(ctx, "%s failed, fallback to local", name, "error", err)
+			if !fallbackLimiter.GetLimiter(ip).Allow() {
+				c.AbortWithStatusJSON(http.StatusTooManyRequests, map[string]interface{}{
+					"code":    4029,
+					"message": "too many requests (fallback)",
+				})
+				return
+			}
 			c.Next(ctx)
 			return
 		}
@@ -244,23 +265,13 @@ func DistributedRateLimit(limiter *cache.DistributedRateLimiter) app.HandlerFunc
 	}
 }
 
+// DistributedRateLimit 分布式限流中间件（无状态服务使用）
+// 使用 Redis 存储限流状态，支持多实例部署
+func DistributedRateLimit(limiter *cache.DistributedRateLimiter) app.HandlerFunc {
+	return distributedRateLimitMiddleware(limiter, "distributed rate limiter")
+}
+
 // DistributedTokenBucketLimit 分布式令牌桶限流中间件
 func DistributedTokenBucketLimit(limiter *cache.TokenBucketLimiter) app.HandlerFunc {
-	return func(ctx context.Context, c *app.RequestContext) {
-		ip := c.ClientIP()
-		allowed, err := limiter.Allow(ctx, ip)
-		if err != nil {
-			// Redis 出错时放行
-			c.Next(ctx)
-			return
-		}
-		if !allowed {
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, map[string]interface{}{
-				"code":    4029,
-				"message": "too many requests",
-			})
-			return
-		}
-		c.Next(ctx)
-	}
+	return distributedRateLimitMiddleware(limiter, "token bucket limiter")
 }

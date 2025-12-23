@@ -30,10 +30,10 @@ type ProtectedCache struct {
 
 // ProtectionConfig 保护配置
 type ProtectionConfig struct {
-	EnableBloom      bool          // 启用布隆过滤器
-	BloomSize        uint          // 布隆过滤器预期元素数量
-	BloomFalseRate   float64       // 布隆过滤器误判率
-	NullCacheTTL     time.Duration // 空值缓存过期时间
+	EnableBloom    bool          // 启用布隆过滤器
+	BloomSize      uint          // 布隆过滤器预期元素数量
+	BloomFalseRate float64       // 布隆过滤器误判率
+	NullCacheTTL   time.Duration // 空值缓存过期时间
 }
 
 // DefaultProtectionConfig 默认配置

@@ -3,9 +3,10 @@ package dao
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	"github.com/test-tt/internal/model"
 	"github.com/test-tt/pkg/database"
-	"gorm.io/gorm"
 )
 
 type UserDAO struct{}

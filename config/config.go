@@ -178,73 +178,104 @@ const defaultInsecureSecret = "your-secret-key-change-in-production"
 func Validate(cfg *Config) error {
 	var errs []string
 
-	// 验证 JWT Secret
-	if cfg.JWT != nil {
-		if cfg.JWT.Secret == "" {
-			errs = append(errs, "jwt.secret is required")
-		} else if cfg.JWT.Secret == defaultInsecureSecret {
-			if cfg.IsProd() {
-				errs = append(errs, "jwt.secret must be changed in production (use APP_JWT_SECRET env var)")
-			}
-			// 开发环境仅警告，不阻止启动
-		} else if len(cfg.JWT.Secret) < 32 {
-			if cfg.IsProd() {
-				errs = append(errs, "jwt.secret must be at least 32 characters in production")
-			}
-		}
-	}
-
-	// 验证 MySQL 配置
-	if cfg.MySQL != nil {
-		if cfg.MySQL.MaxOpenConns > 500 {
-			errs = append(errs, "mysql.max_open_conns should not exceed 500")
-		}
-		if cfg.MySQL.MaxIdleConns > cfg.MySQL.MaxOpenConns {
-			errs = append(errs, "mysql.max_idle_conns should not exceed max_open_conns")
-		}
-		if cfg.MySQL.ConnMaxLifetime < 0 {
-			errs = append(errs, "mysql.conn_max_lifetime must be positive")
-		}
-	}
-
-	// 验证 Redis 配置
-	if cfg.Redis != nil {
-		if cfg.Redis.PoolSize > 1000 {
-			errs = append(errs, "redis.pool_size should not exceed 1000")
-		}
-		if cfg.Redis.DialTimeout <= 0 {
-			errs = append(errs, "redis.dial_timeout must be positive")
-		}
-		if cfg.Redis.ReadTimeout <= 0 {
-			errs = append(errs, "redis.read_timeout must be positive")
-		}
-		if cfg.Redis.WriteTimeout <= 0 {
-			errs = append(errs, "redis.write_timeout must be positive")
-		}
-	}
-
-	// 验证 Server 配置
-	if cfg.Server != nil {
-		if cfg.Server.Port <= 0 || cfg.Server.Port > 65535 {
-			errs = append(errs, "server.port must be between 1 and 65535")
-		}
-	}
-
-	// 验证 RateLimit 配置
-	if cfg.RateLimit != nil {
-		if cfg.RateLimit.Rate <= 0 {
-			errs = append(errs, "ratelimit.rate must be positive")
-		}
-		if cfg.RateLimit.Burst <= 0 {
-			errs = append(errs, "ratelimit.burst must be positive")
-		}
-	}
+	errs = append(errs, validateJWT(cfg)...)
+	errs = append(errs, validateMySQL(cfg.MySQL)...)
+	errs = append(errs, validateRedis(cfg.Redis)...)
+	errs = append(errs, validateServer(cfg.Server)...)
+	errs = append(errs, validateRateLimit(cfg.RateLimit)...)
 
 	if len(errs) > 0 {
 		return fmt.Errorf("config validation failed: %v", errs)
 	}
-
 	return nil
+}
+
+// validateJWT 验证 JWT 配置
+func validateJWT(cfg *Config) []string {
+	if cfg.JWT == nil {
+		return nil
+	}
+	var errs []string
+	if cfg.JWT.Secret == "" {
+		errs = append(errs, "jwt.secret is required")
+	} else if cfg.JWT.Secret == defaultInsecureSecret && cfg.IsProd() {
+		errs = append(errs, "jwt.secret must be changed in production (use APP_JWT_SECRET env var)")
+	} else if len(cfg.JWT.Secret) < 32 && cfg.IsProd() {
+		errs = append(errs, "jwt.secret must be at least 32 characters in production")
+	}
+	return errs
+}
+
+// validateMySQL 验证 MySQL 配置
+func validateMySQL(cfg *MySQLConfig) []string {
+	if cfg == nil {
+		return nil
+	}
+	var errs []string
+	if cfg.MaxOpenConns > 500 {
+		errs = append(errs, "mysql.max_open_conns should not exceed 500")
+	}
+	if cfg.MaxOpenConns > 0 && cfg.MaxIdleConns > cfg.MaxOpenConns {
+		errs = append(errs, "mysql.max_idle_conns should not exceed max_open_conns")
+	}
+	if cfg.ConnMaxLifetime < 0 {
+		errs = append(errs, "mysql.conn_max_lifetime must be positive")
+	}
+	if cfg.MaxOpenConns <= 0 {
+		errs = append(errs, "mysql.max_open_conns must be positive")
+	}
+	if cfg.MaxIdleConns < 0 {
+		errs = append(errs, "mysql.max_idle_conns must be non-negative")
+	}
+	return errs
+}
+
+// validateRedis 验证 Redis 配置
+func validateRedis(cfg *RedisConfig) []string {
+	if cfg == nil {
+		return nil
+	}
+	var errs []string
+	if cfg.PoolSize > 1000 {
+		errs = append(errs, "redis.pool_size should not exceed 1000")
+	}
+	if cfg.DialTimeout <= 0 {
+		errs = append(errs, "redis.dial_timeout must be positive")
+	}
+	if cfg.ReadTimeout <= 0 {
+		errs = append(errs, "redis.read_timeout must be positive")
+	}
+	if cfg.WriteTimeout <= 0 {
+		errs = append(errs, "redis.write_timeout must be positive")
+	}
+	return errs
+}
+
+// validateServer 验证 Server 配置
+func validateServer(cfg *ServerConfig) []string {
+	if cfg == nil {
+		return nil
+	}
+	var errs []string
+	if cfg.Port <= 0 || cfg.Port > 65535 {
+		errs = append(errs, "server.port must be between 1 and 65535")
+	}
+	return errs
+}
+
+// validateRateLimit 验证 RateLimit 配置
+func validateRateLimit(cfg *RateLimitConfig) []string {
+	if cfg == nil {
+		return nil
+	}
+	var errs []string
+	if cfg.Rate <= 0 {
+		errs = append(errs, "ratelimit.rate must be positive")
+	}
+	if cfg.Burst <= 0 {
+		errs = append(errs, "ratelimit.burst must be positive")
+	}
+	return errs
 }
 
 // MustValidate 验证配置，失败则 panic

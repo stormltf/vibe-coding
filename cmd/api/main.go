@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
+
 	"github.com/test-tt/config"
 	"github.com/test-tt/internal/middleware"
 	"github.com/test-tt/internal/router"
@@ -149,6 +150,13 @@ func main() {
 		})
 	}
 
+	// 启动连接池指标收集器
+	stopMetricsCollector := middleware.StartPoolMetricsCollector(15 * time.Second)
+	cleanups = append(cleanups, func() {
+		logger.Info("stopping pool metrics collector...")
+		stopMetricsCollector()
+	})
+
 	// 初始化 HTTP 服务器
 	h := server.Default(
 		server.WithHostPorts(fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)),
@@ -161,12 +169,6 @@ func main() {
 
 	// 注册路由
 	router.Register(h)
-
-	// 注册限流器清理
-	cleanups = append(cleanups, func() {
-		logger.Info("stopping rate limiters...")
-		middleware.StopAllRateLimiters()
-	})
 
 	// 优雅关闭
 	var wg sync.WaitGroup
@@ -185,11 +187,16 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
+		// 1. 先关闭服务器（停止接收新请求，等待活跃请求完成）
 		if err := h.Shutdown(ctx); err != nil {
 			logger.Errorf("server shutdown error", "error", err)
 		} else {
 			logger.Info("server shutdown completed gracefully")
 		}
+
+		// 2. 服务器关闭后停止限流器（此时不再有新请求）
+		logger.Info("stopping rate limiters...")
+		middleware.StopAllRateLimiters()
 	}()
 
 	logger.Infof("server started", "host", cfg.Server.Host, "port", cfg.Server.Port)

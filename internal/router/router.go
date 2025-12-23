@@ -14,6 +14,7 @@ import (
 	"github.com/hertz-contrib/swagger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
+
 	"github.com/test-tt/config"
 	"github.com/test-tt/internal/handler"
 	"github.com/test-tt/internal/middleware"
@@ -132,8 +133,9 @@ func prometheusHandler() app.HandlerFunc {
 
 // responseWriterAdapter 适配 Hertz 的 ResponseWriter
 type responseWriterAdapter struct {
-	c      *app.RequestContext
-	header http.Header
+	c             *app.RequestContext
+	header        http.Header
+	headerWritten bool
 }
 
 func newResponseWriterAdapter(c *app.RequestContext) *responseWriterAdapter {
@@ -147,24 +149,39 @@ func (r *responseWriterAdapter) Header() http.Header {
 	return r.header
 }
 
-func (r *responseWriterAdapter) Write(data []byte) (int, error) {
-	// 在首次写入前同步 headers 到 Hertz
-	for k, v := range r.header {
-		if len(v) > 0 {
-			r.c.Response.Header.Set(k, v[0])
+// syncHeaders 同步所有 headers 到 Hertz（只执行一次）
+func (r *responseWriterAdapter) syncHeaders() {
+	if r.headerWritten {
+		return
+	}
+	r.headerWritten = true
+
+	// 同步所有 header 值（支持多值 header）
+	for k, values := range r.header {
+		for i, v := range values {
+			if i == 0 {
+				r.c.Response.Header.Set(k, v)
+			} else {
+				r.c.Response.Header.Add(k, v)
+			}
 		}
 	}
+}
+
+func (r *responseWriterAdapter) Write(data []byte) (int, error) {
+	r.syncHeaders()
 	return r.c.Write(data)
 }
 
 func (r *responseWriterAdapter) WriteHeader(statusCode int) {
-	// 同步 headers 到 Hertz
-	for k, v := range r.header {
-		if len(v) > 0 {
-			r.c.Response.Header.Set(k, v[0])
-		}
-	}
+	r.syncHeaders()
 	r.c.SetStatusCode(statusCode)
+}
+
+// Flush 实现 http.Flusher 接口
+func (r *responseWriterAdapter) Flush() {
+	r.syncHeaders()
+	// Hertz 会自动处理 flush
 }
 
 // pprofHandler 将 pprof handler 适配为 Hertz handler
