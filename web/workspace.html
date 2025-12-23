@@ -387,14 +387,14 @@
         .preview-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
             padding: 12px 16px;
             background: var(--bg-card);
             border-bottom: 1px solid var(--border);
         }
         .preview-tabs {
-            display: flex;
+            display: none; /* 默认隐藏，只在code视图时显示 */
             gap: 4px;
+            margin-right: auto; /* 让文件标签靠左，按钮靠右 */
         }
         .preview-tab {
             padding: 6px 12px;
@@ -425,7 +425,8 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .preview-btn:hover { background: rgba(255,255,255,0.15); color: var(--text); }
+        .preview-btn:hover:not(:disabled) { background: rgba(255,255,255,0.15); color: var(--text); }
+        .preview-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .preview-content {
             flex: 1;
             overflow: hidden;
@@ -585,6 +586,211 @@
         .btn-primary:hover { background: var(--primary-dark); }
 
         .hidden { display: none !important; }
+
+        /* 语言切换器 */
+        .lang-switcher {
+            position: relative;
+            margin-right: 12px;
+        }
+        .lang-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.15); }
+        .lang-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            min-width: 120px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        .lang-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .lang-option {
+            display: block;
+            width: 100%;
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lang-option:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+        }
+        .lang-option:first-child { border-radius: 8px 8px 0 0; }
+        .lang-option:last-child { border-radius: 0 0 8px 8px; }
+
+        /* 项目侧边栏 */
+        .projects-sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.2s, min-width 0.2s;
+        }
+        .projects-sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+            border-right: none;
+        }
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sidebar-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .btn-new-project {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: var(--primary);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 12px 16px;
+        }
+        .btn-new-project:hover { background: var(--primary-dark); }
+        .btn-new-project svg { width: 14px; height: 14px; }
+        .projects-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+        .project-item:hover { background: rgba(255,255,255,0.05); }
+        .project-item.active { background: rgba(102, 126, 234, 0.2); }
+        .project-item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: rgba(102, 126, 234, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .project-item-icon svg { width: 16px; height: 16px; color: var(--primary); }
+        .project-item-info { flex: 1; min-width: 0; }
+        .project-item-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .project-item-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .project-item-delete {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .project-item:hover .project-item-delete { opacity: 1; }
+        .project-item-delete:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
+        .sidebar-toggle {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-toggle-sidebar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-toggle-sidebar:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+        .projects-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .projects-empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5; }
+        .projects-empty p { font-size: 13px; }
+        /* 展开按钮（侧边栏收起时显示） */
+        .btn-expand-sidebar {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 60px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            z-index: 100;
+        }
+        .btn-expand-sidebar:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+        .projects-sidebar.collapsed ~ .btn-expand-sidebar { display: flex; }
     </style>
 </head>
 <body>
@@ -597,7 +803,7 @@
                         <path d="M19 12H5M12 19l-7-7 7-7"/>
                     </svg>
                 </a>
-                <span class="project-name">New Project</span>
+                <span class="project-name" data-i18n="workspace.project">New Project</span>
             </div>
             <div class="header-center">
                 <button class="view-tab active" data-view="preview">
@@ -606,17 +812,30 @@
                         <circle cx="8.5" cy="8.5" r="1.5"/>
                         <path d="M21 15l-5-5L5 21"/>
                     </svg>
-                    Preview
+                    <span data-i18n="workspace.preview">Preview</span>
                 </button>
                 <button class="view-tab" data-view="code">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="16 18 22 12 16 6"/>
                         <polyline points="8 6 2 12 8 18"/>
                     </svg>
-                    Code
+                    <span data-i18n="workspace.code">Code</span>
                 </button>
             </div>
             <div class="header-right">
+                <!-- 语言切换 -->
+                <div class="lang-switcher">
+                    <button class="lang-btn" id="lang-btn">
+                        <span id="lang-current">EN</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown" id="lang-dropdown">
+                        <button class="lang-option" data-lang="en-US">English</button>
+                        <button class="lang-option" data-lang="zh-CN">中文</button>
+                    </div>
+                </div>
                 <div class="user-menu">
                     <button class="user-btn" id="user-btn">
                         <div class="user-avatar" id="user-avatar">U</div>
@@ -631,14 +850,14 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             </svg>
-                            Home
+                            <span data-i18n="workspace.home">Home</span>
                         </a>
                         <button class="dropdown-item" id="btn-profile">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
-                            Edit Profile
+                            <span data-i18n="workspace.profile">Edit Profile</span>
                         </button>
                         <button class="dropdown-item" id="btn-logout">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -646,7 +865,7 @@
                                 <polyline points="16 17 21 12 16 7"/>
                                 <line x1="21" y1="12" x2="9" y2="12"/>
                             </svg>
-                            Logout
+                            <span data-i18n="workspace.logout">Logout</span>
                         </button>
                     </div>
                 </div>
@@ -655,6 +874,42 @@
 
         <!-- 主内容 -->
         <main class="main-content">
+            <!-- 项目侧边栏 -->
+            <aside class="projects-sidebar" id="projects-sidebar">
+                <div class="sidebar-header">
+                    <span class="sidebar-title" data-i18n="workspace.projects">Projects</span>
+                </div>
+                <button class="btn-new-project" id="btn-new-project">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span data-i18n="workspace.newProject">New Project</span>
+                </button>
+                <div class="projects-list" id="projects-list">
+                    <!-- 项目列表由JS动态生成 -->
+                    <div class="projects-empty" id="projects-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <p data-i18n="workspace.noProjects">No projects yet</p>
+                    </div>
+                </div>
+                <div class="sidebar-toggle">
+                    <button class="btn-toggle-sidebar" id="btn-collapse-sidebar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span data-i18n="workspace.hide">Hide</span>
+                    </button>
+                </div>
+            </aside>
+            <!-- 展开按钮 -->
+            <button class="btn-expand-sidebar" id="btn-expand-sidebar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
             <!-- 左侧聊天面板 -->
             <div class="chat-panel">
                 <div class="chat-messages" id="chat-messages">
@@ -666,19 +921,19 @@
                                 <path d="M2 12l10 5 10-5"/>
                             </svg>
                         </div>
-                        <h2>Let's build something amazing</h2>
-                        <p>Describe what you want to create, and I'll help you build it.</p>
+                        <h2 data-i18n="workspace.welcome.title">Let's build something amazing</h2>
+                        <p data-i18n="workspace.welcome.desc">Describe what you want to create, and I'll help you build it.</p>
                         <div class="suggestions">
-                            <button class="suggestion" data-prompt="Create a landing page for a SaaS product with hero section and pricing">Landing page</button>
-                            <button class="suggestion" data-prompt="Build a login form with email and password validation">Login form</button>
-                            <button class="suggestion" data-prompt="Design a dashboard with sidebar navigation and charts">Dashboard</button>
-                            <button class="suggestion" data-prompt="Create a blog post card component with image and tags">Blog card</button>
+                            <button class="suggestion" data-prompt="Create a landing page for a SaaS product with hero section and pricing" data-i18n="workspace.suggestion.landing">Landing page</button>
+                            <button class="suggestion" data-prompt="Build a login form with email and password validation" data-i18n="workspace.suggestion.login">Login form</button>
+                            <button class="suggestion" data-prompt="Design a dashboard with sidebar navigation and charts" data-i18n="workspace.suggestion.dashboard">Dashboard</button>
+                            <button class="suggestion" data-prompt="Create a blog post card component with image and tags" data-i18n="workspace.suggestion.blog">Blog card</button>
                         </div>
                     </div>
                 </div>
                 <div class="chat-input-area">
                     <div class="input-wrapper">
-                        <textarea class="chat-input" id="chat-input" placeholder="Describe what you want to create..." rows="1"></textarea>
+                        <textarea class="chat-input" id="chat-input" data-i18n-placeholder="workspace.input.placeholder" placeholder="Describe what you want to create..." rows="1"></textarea>
                         <button class="send-btn" id="send-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
@@ -699,8 +954,8 @@
                         <button class="preview-tab" data-file="style.css">style.css</button>
                     </div>
                     <div class="preview-actions">
-                        <button class="preview-btn" id="btn-copy">Copy code</button>
-                        <button class="preview-btn" id="btn-download">Download</button>
+                        <button class="preview-btn" id="btn-copy" data-i18n="workspace.copy" disabled>Copy code</button>
+                        <button class="preview-btn" id="btn-download" data-i18n="workspace.download" disabled>Download</button>
                     </div>
                 </div>
                 <div class="preview-content">
@@ -710,7 +965,7 @@
                             <path d="M3 9h18"/>
                             <path d="M9 21V9"/>
                         </svg>
-                        <p>Your creation will appear here</p>
+                        <p data-i18n="workspace.placeholder">Your creation will appear here</p>
                     </div>
                     <div class="preview-frame-container" id="preview-frame-container">
                         <iframe class="preview-iframe" id="preview-iframe"></iframe>
@@ -725,24 +980,24 @@
     <div class="modal-overlay" id="profile-modal">
         <div class="modal">
             <div class="modal-header">
-                <h3>Edit Profile</h3>
+                <h3 data-i18n="workspace.modal.profile">Edit Profile</h3>
                 <button class="modal-close" id="modal-close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="profile-form">
                     <div class="form-group">
-                        <label>Name</label>
-                        <input type="text" id="profile-name" placeholder="Your name">
+                        <label data-i18n="workspace.modal.name">Name</label>
+                        <input type="text" id="profile-name" data-i18n-placeholder="form.name.placeholder" placeholder="Your name">
                     </div>
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="profile-email" placeholder="your@email.com">
+                        <label data-i18n="workspace.modal.email">Email</label>
+                        <input type="email" id="profile-email" data-i18n-placeholder="form.email.placeholder" placeholder="your@email.com">
                     </div>
                     <div class="form-group">
-                        <label>Age</label>
-                        <input type="number" id="profile-age" placeholder="Your age">
+                        <label data-i18n="workspace.modal.age">Age</label>
+                        <input type="number" id="profile-age" data-i18n-placeholder="form.age.placeholder" placeholder="Your age">
                     </div>
-                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <button type="submit" class="btn-primary" data-i18n="workspace.modal.save">Save Changes</button>
                 </form>
             </div>
         </div>
@@ -750,15 +1005,82 @@
 
     <div class="toast-container" id="toast-container"></div>
 
+    <script src="/static/js/i18n.js"></script>
     <script src="/static/js/api.js"></script>
     <script src="/static/js/auth.js"></script>
     <script>
         // ========== 状态管理 ==========
         const state = {
+            // 项目相关
+            projectId: null,
+            projectName: 'New Project',
+            projects: [],
+            // 内容相关
             messages: [],
             currentCode: { html: '', css: '' },
             currentView: 'preview',
-            isGenerating: false
+            isGenerating: false,
+            // 保存相关
+            isDirty: false,
+            lastSavedAt: null,
+            autoSaveTimer: null
+        };
+
+        // ========== 项目 API ==========
+        const ProjectAPI = {
+            async list() {
+                const resp = await fetch('/api/v1/projects', {
+                    headers: { 'Authorization': `Bearer ${API.getToken()}` }
+                });
+                if (!resp.ok) throw new Error('Failed to load projects');
+                const data = await resp.json();
+                return data.data || [];
+            },
+
+            async get(id) {
+                const resp = await fetch(`/api/v1/projects/${id}`, {
+                    headers: { 'Authorization': `Bearer ${API.getToken()}` }
+                });
+                if (!resp.ok) throw new Error('Failed to load project');
+                const data = await resp.json();
+                return data.data;
+            },
+
+            async create(name = '') {
+                const resp = await fetch('/api/v1/projects', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API.getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name })
+                });
+                if (!resp.ok) throw new Error('Failed to create project');
+                const data = await resp.json();
+                return data.data;
+            },
+
+            async update(id, data) {
+                const resp = await fetch(`/api/v1/projects/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${API.getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                if (!resp.ok) throw new Error('Failed to save project');
+                const result = await resp.json();
+                return result.data;
+            },
+
+            async delete(id) {
+                const resp = await fetch(`/api/v1/projects/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${API.getToken()}` }
+                });
+                if (!resp.ok) throw new Error('Failed to delete project');
+            }
         };
 
         // ========== UI 工具 ==========
@@ -779,7 +1101,107 @@
         const AGENT_API_URL = 'http://localhost:3001';
 
         // ========== Agent API ==========
-        // API 调用逻辑已整合到 handleSend 和相关函数中
+        // 封装 Agent API 调用，统一添加认证 header
+        const AgentAPI = {
+            // 获取认证 headers
+            getAuthHeaders() {
+                const token = API.getToken();
+                return {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+            },
+
+            // 启动生成任务
+            async generate(prompt) {
+                const resp = await fetch(`${AGENT_API_URL}/api/generate`, {
+                    method: 'POST',
+                    headers: this.getAuthHeaders(),
+                    body: JSON.stringify({ prompt })
+                });
+                if (!resp.ok) {
+                    if (resp.status === 401) {
+                        throw new Error('Authentication required. Please login first.');
+                    }
+                    throw new Error('Failed to start generation');
+                }
+                return resp.json();
+            },
+
+            // 获取会话状态
+            async getSession(sessionId) {
+                const resp = await fetch(`${AGENT_API_URL}/api/session/${sessionId}`, {
+                    headers: this.getAuthHeaders()
+                });
+                if (!resp.ok) {
+                    if (resp.status === 401) {
+                        throw new Error('Authentication required');
+                    }
+                    throw new Error('Failed to get session');
+                }
+                return resp.json();
+            },
+
+            // 获取所有会话（调试用）
+            async listSessions() {
+                const resp = await fetch(`${AGENT_API_URL}/api/sessions`, {
+                    headers: this.getAuthHeaders()
+                });
+                if (!resp.ok) {
+                    throw new Error('Failed to list sessions');
+                }
+                return resp.json();
+            },
+
+            // SSE 流式获取（使用 fetch + ReadableStream 代替 EventSource）
+            async streamSession(sessionId, onMessage, onComplete, onError) {
+                try {
+                    const resp = await fetch(`${AGENT_API_URL}/api/stream/${sessionId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${API.getToken()}`,
+                            'Accept': 'text/event-stream'
+                        }
+                    });
+
+                    if (!resp.ok) {
+                        if (resp.status === 401) {
+                            throw new Error('Authentication required');
+                        }
+                        throw new Error('Failed to connect to stream');
+                    }
+
+                    const reader = resp.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); // Keep incomplete line in buffer
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.type === 'complete' || data.type === 'error') {
+                                        onComplete(data);
+                                        return;
+                                    }
+                                    onMessage(data);
+                                } catch (e) {
+                                    console.error('SSE parse error:', e);
+                                }
+                            }
+                        }
+                    }
+                } catch (err) {
+                    onError(err);
+                }
+            }
+        };
 
         // ========== Fallback 模板（当 Agent 不可用时） ==========
         const fallbackTemplates = {
@@ -1027,6 +1449,7 @@
             const placeholder = document.getElementById('preview-placeholder');
             const frameContainer = document.getElementById('preview-frame-container');
             const codeView = document.getElementById('code-view');
+            const previewTabs = document.querySelector('.preview-tabs');
 
             // 隐藏占位符
             placeholder.style.display = 'none';
@@ -1040,6 +1463,9 @@
             document.querySelector('.view-tab[data-view="preview"]')?.classList.add('active');
             state.currentView = 'preview';
 
+            // 隐藏文件标签（preview模式不显示）
+            if (previewTabs) previewTabs.style.display = 'none';
+
             // 渲染 HTML 到 iframe
             const fullHtml = html.replace('</head>', `<style>${css}</style></head>`);
             iframe.srcdoc = fullHtml;
@@ -1047,6 +1473,13 @@
 
             // 同时更新代码视图内容（供切换时使用）
             codeView.innerHTML = highlightCode(html);
+
+            // 启用复制和下载按钮
+            document.getElementById('btn-copy').disabled = false;
+            document.getElementById('btn-download').disabled = false;
+
+            // 标记有未保存的更改
+            state.isDirty = true;
         }
 
         function highlightCode(code) {
@@ -1089,18 +1522,8 @@
             try {
                 console.log('1. Sending generate request...');
 
-                // 先发起生成请求获取 sessionId
-                const initResponse = await fetch(`${AGENT_API_URL}/api/generate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt })
-                });
-
-                if (!initResponse.ok) {
-                    throw new Error('Failed to start generation');
-                }
-
-                const initData = await initResponse.json();
+                // 先发起生成请求获取 sessionId（使用 AgentAPI 自动添加认证）
+                const initData = await AgentAPI.generate(prompt);
                 sessionId = initData.sessionId;
                 console.log('2. Got sessionId:', sessionId);
 
@@ -1112,20 +1535,22 @@
 
                 if (result) {
                     console.log('4. Got result! HTML length:', result.html?.length);
-                    finalizeMessage(aiMsg, result.message || 'Page generated successfully!');
+                    finalizeMessage(aiMsg, result.message || I18n.t('workspace.generate.success'));
                     updatePreview(result.html, result.css || '');
-                    UI.success('Page generated!');
+                    UI.success(I18n.t('workspace.generate.success'));
+                    // 生成成功后自动保存项目
+                    if (state.projectId) {
+                        await saveProject();
+                    }
                 } else {
-                    console.log('4. No result, using fallback');
-                    const fallback = getFallbackTemplate(prompt);
-                    finalizeMessage(aiMsg, fallback.message);
-                    updatePreview(fallback.html, fallback.css || '');
+                    console.log('4. No result, generation failed');
+                    finalizeMessage(aiMsg, I18n.t('workspace.generate.failed'));
+                    UI.error(I18n.t('workspace.generate.failed'));
                 }
             } catch (err) {
                 console.error('handleSend error:', err);
-                const fallback = getFallbackTemplate(prompt);
-                finalizeMessage(aiMsg, fallback.message);
-                updatePreview(fallback.html, fallback.css || '');
+                finalizeMessage(aiMsg, I18n.t('workspace.generate.error'));
+                UI.error(I18n.t('workspace.generate.error'));
             }
 
             state.isGenerating = false;
@@ -1218,8 +1643,7 @@
                     const elapsed = Math.round((Date.now() - startTime) / 1000);
                     console.log(`Poll #${pollCount} (${elapsed}s elapsed)`);
 
-                    const resp = await fetch(`${AGENT_API_URL}/api/session/${sessionId}`);
-                    const data = await resp.json();
+                    const data = await AgentAPI.getSession(sessionId);
 
                     if (data.session) {
                         console.log('Status:', data.session.status);
@@ -1263,8 +1687,7 @@
             const startTime = Date.now();
             while (Date.now() - startTime < timeout) {
                 try {
-                    const resp = await fetch(`${AGENT_API_URL}/api/session/${sessionId}`);
-                    const data = await resp.json();
+                    const data = await AgentAPI.getSession(sessionId);
                     if (data.session?.status === 'completed' && data.session.result) {
                         return data.session.result;
                     }
@@ -1329,6 +1752,7 @@
             const codeView = document.getElementById('code-view');
             const frameContainer = document.getElementById('preview-frame-container');
             const placeholder = document.getElementById('preview-placeholder');
+            const previewTabs = document.querySelector('.preview-tabs');
 
             // 切换到代码视图
             document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
@@ -1337,6 +1761,8 @@
             placeholder.style.display = 'none';
             codeView.classList.add('active');
             frameContainer.classList.remove('active');
+            // 显示文件标签（code视图时显示）
+            if (previewTabs) previewTabs.style.display = 'flex';
             codeView.innerHTML = '<span style="color: var(--text-muted);">Generating code...</span>';
         }
 
@@ -1423,13 +1849,18 @@
 
                     const codeView = document.getElementById('code-view');
                     const frameContainer = document.getElementById('preview-frame-container');
+                    const previewTabs = document.querySelector('.preview-tabs');
 
                     if (view === 'code') {
                         codeView.classList.add('active');
                         frameContainer.classList.remove('active');
+                        // 显示文件标签
+                        if (previewTabs) previewTabs.style.display = 'flex';
                     } else {
                         codeView.classList.remove('active');
                         if (state.currentCode.html) frameContainer.classList.add('active');
+                        // 隐藏文件标签
+                        if (previewTabs) previewTabs.style.display = 'none';
                     }
                 });
             });
@@ -1457,14 +1888,33 @@
                 navigator.clipboard.writeText(code).then(() => UI.success('Code copied!'));
             });
 
-            // 下载
+            // 下载 - 生成完整的可运行HTML页面
             document.getElementById('btn-download').addEventListener('click', () => {
-                const blob = new Blob([state.currentCode.html], { type: 'text/html' });
+                let html = state.currentCode.html || '';
+                const css = state.currentCode.css || '';
+
+                // 如果有CSS，将其内嵌到HTML的head中
+                if (css && html) {
+                    // 检查是否已经有style标签
+                    if (!html.includes('<style>') || !html.includes(css)) {
+                        if (html.includes('</head>')) {
+                            html = html.replace('</head>', `<style>\n${css}\n</style>\n</head>`);
+                        } else if (html.includes('</head>')) {
+                            html = html.replace('</HEAD>', `<style>\n${css}\n</style>\n</HEAD>`);
+                        } else {
+                            // 如果没有head标签，在html开头添加
+                            html = `<style>\n${css}\n</style>\n` + html;
+                        }
+                    }
+                }
+
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = 'index.html';
                 a.click();
-                UI.success('Downloaded!');
+                URL.revokeObjectURL(a.href); // 清理
+                UI.success(I18n.t('workspace.download') + '!');
             });
 
             // 拖拽调整面板大小
@@ -1485,6 +1935,9 @@
         async function init() {
             console.log('Workspace init started');
             try {
+                // 初始化国际化
+                I18n.init();
+
                 await Auth.init();
                 console.log('Auth initialized, logged in:', Auth.isLoggedIn());
 
@@ -1501,10 +1954,326 @@
                 });
 
                 bindEvents();
+                bindLangSwitcher();
+                bindProjectEvents();
+
+                // 加载项目列表
+                await loadProjects();
+
+                // 启动自动保存
+                startAutoSave();
+
+                // 页面关闭前保存
+                window.addEventListener('beforeunload', (e) => {
+                    if (state.isDirty && state.projectId) {
+                        saveProject();
+                    }
+                });
+
                 console.log('Workspace init complete, events bound');
             } catch (err) {
                 console.error('Init error:', err);
             }
+        }
+
+        // ========== 项目管理 ==========
+        async function loadProjects() {
+            try {
+                state.projects = await ProjectAPI.list();
+                renderProjectsList();
+
+                // 如果有项目，自动加载最近的
+                if (state.projects.length > 0) {
+                    await loadProject(state.projects[0].id);
+                }
+            } catch (err) {
+                console.error('Failed to load projects:', err);
+            }
+        }
+
+        function renderProjectsList() {
+            const list = document.getElementById('projects-list');
+            const empty = document.getElementById('projects-empty');
+
+            // 清空现有项目（保留empty提示）
+            list.querySelectorAll('.project-item').forEach(el => el.remove());
+
+            if (state.projects.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+
+            empty.style.display = 'none';
+
+            state.projects.forEach(project => {
+                const item = document.createElement('div');
+                item.className = 'project-item' + (project.id === state.projectId ? ' active' : '');
+                item.dataset.id = project.id;
+
+                const time = new Date(project.updated_at);
+                const timeStr = formatTime(time);
+
+                item.innerHTML = `
+                    <div class="project-item-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                    </div>
+                    <div class="project-item-info">
+                        <div class="project-item-name">${escapeHtml(project.name)}</div>
+                        <div class="project-item-time">${timeStr}</div>
+                    </div>
+                    <button class="project-item-delete" title="Delete">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                `;
+
+                // 点击加载项目
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.project-item-delete')) {
+                        loadProject(project.id);
+                    }
+                });
+
+                // 删除项目
+                item.querySelector('.project-item-delete').addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (confirm(I18n.t('workspace.confirmDelete') || 'Delete this project?')) {
+                        await deleteProject(project.id);
+                    }
+                });
+
+                list.insertBefore(item, empty);
+            });
+        }
+
+        async function loadProject(id) {
+            try {
+                // 先保存当前项目
+                if (state.isDirty && state.projectId) {
+                    await saveProject();
+                }
+
+                const project = await ProjectAPI.get(id);
+                state.projectId = project.id;
+                state.projectName = project.name;
+                state.currentCode = { html: project.html || '', css: project.css || '' };
+                state.isDirty = false;
+
+                // 更新UI
+                document.querySelector('.project-name').textContent = project.name;
+
+                // 加载消息历史
+                const messages = project.messages ? JSON.parse(project.messages) : [];
+                restoreMessages(messages);
+
+                // 如果有代码，更新预览
+                if (project.html) {
+                    updatePreview(project.html, project.css || '');
+                } else {
+                    // 重置预览
+                    resetPreview();
+                }
+
+                // 更新项目列表高亮
+                document.querySelectorAll('.project-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.id == id);
+                });
+
+            } catch (err) {
+                console.error('Failed to load project:', err);
+                UI.error('Failed to load project');
+            }
+        }
+
+        async function createProject() {
+            try {
+                // 先保存当前项目
+                if (state.isDirty && state.projectId) {
+                    await saveProject();
+                }
+
+                const project = await ProjectAPI.create(I18n.t('workspace.project') || 'New Project');
+                state.projects.unshift(project);
+                renderProjectsList();
+
+                // 切换到新项目
+                state.projectId = project.id;
+                state.projectName = project.name;
+                state.currentCode = { html: '', css: '' };
+                state.messages = [];
+                state.isDirty = false;
+
+                // 重置UI
+                document.querySelector('.project-name').textContent = project.name;
+                resetPreview();
+                resetChat();
+
+                UI.success(I18n.t('workspace.projectCreated') || 'Project created');
+            } catch (err) {
+                console.error('Failed to create project:', err);
+                UI.error('Failed to create project');
+            }
+        }
+
+        async function saveProject() {
+            if (!state.projectId) return;
+
+            try {
+                // 收集消息历史
+                const messages = collectMessages();
+
+                await ProjectAPI.update(state.projectId, {
+                    name: state.projectName,
+                    html: state.currentCode.html,
+                    css: state.currentCode.css,
+                    messages: JSON.stringify(messages)
+                });
+
+                state.isDirty = false;
+                state.lastSavedAt = new Date();
+                console.log('Project saved at', state.lastSavedAt);
+            } catch (err) {
+                console.error('Failed to save project:', err);
+            }
+        }
+
+        async function deleteProject(id) {
+            try {
+                await ProjectAPI.delete(id);
+                state.projects = state.projects.filter(p => p.id !== id);
+                renderProjectsList();
+
+                // 如果删除的是当前项目
+                if (state.projectId === id) {
+                    if (state.projects.length > 0) {
+                        await loadProject(state.projects[0].id);
+                    } else {
+                        state.projectId = null;
+                        state.projectName = 'New Project';
+                        state.currentCode = { html: '', css: '' };
+                        resetPreview();
+                        resetChat();
+                    }
+                }
+
+                UI.success(I18n.t('workspace.projectDeleted') || 'Project deleted');
+            } catch (err) {
+                console.error('Failed to delete project:', err);
+                UI.error('Failed to delete project');
+            }
+        }
+
+        function collectMessages() {
+            const msgs = [];
+            document.querySelectorAll('#chat-messages .message').forEach(el => {
+                if (el.classList.contains('welcome')) return;
+                msgs.push({
+                    type: el.querySelector('.msg-user') ? 'user' : 'ai',
+                    content: el.querySelector('.msg-text')?.textContent || ''
+                });
+            });
+            return msgs;
+        }
+
+        function restoreMessages(messages) {
+            const container = document.getElementById('chat-messages');
+            // 保留welcome，移除其他消息
+            container.querySelectorAll('.message:not(.welcome)').forEach(el => el.remove());
+
+            if (messages.length === 0) {
+                document.getElementById('welcome').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('welcome').style.display = 'none';
+
+            messages.forEach(msg => {
+                addMessage(msg.content, msg.type);
+            });
+        }
+
+        function resetPreview() {
+            document.getElementById('preview-placeholder').style.display = 'flex';
+            document.getElementById('preview-frame-container').classList.remove('active');
+            document.getElementById('code-view').classList.remove('active');
+            document.getElementById('btn-copy').disabled = true;
+            document.getElementById('btn-download').disabled = true;
+        }
+
+        function resetChat() {
+            const container = document.getElementById('chat-messages');
+            container.querySelectorAll('.message:not(.welcome)').forEach(el => el.remove());
+            document.getElementById('welcome').style.display = 'block';
+            document.getElementById('chat-input').value = '';
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return I18n.t('workspace.justNow') || 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' min ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
+            return date.toLocaleDateString();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function startAutoSave() {
+            // 每30秒自动保存
+            state.autoSaveTimer = setInterval(() => {
+                if (state.isDirty && state.projectId) {
+                    saveProject();
+                }
+            }, 30000);
+        }
+
+        function bindProjectEvents() {
+            // 新建项目
+            document.getElementById('btn-new-project').addEventListener('click', createProject);
+
+            // 收起/展开侧边栏
+            document.getElementById('btn-collapse-sidebar').addEventListener('click', () => {
+                document.getElementById('projects-sidebar').classList.add('collapsed');
+            });
+            document.getElementById('btn-expand-sidebar').addEventListener('click', () => {
+                document.getElementById('projects-sidebar').classList.remove('collapsed');
+            });
+        }
+
+        // ========== 语言切换 ==========
+        function bindLangSwitcher() {
+            const langBtn = document.getElementById('lang-btn');
+            const langDropdown = document.getElementById('lang-dropdown');
+
+            if (!langBtn || !langDropdown) return;
+
+            // Toggle dropdown
+            langBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                langDropdown.classList.toggle('show');
+            });
+
+            // Select language
+            document.querySelectorAll('.lang-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const lang = option.getAttribute('data-lang');
+                    I18n.setLang(lang);
+                    langDropdown.classList.remove('show');
+                });
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                langDropdown.classList.remove('show');
+            });
         }
 
         document.addEventListener('DOMContentLoaded', init);
@@ -1516,13 +2285,8 @@
             console.log('Test prompt:', prompt);
 
             try {
-                console.log('Testing fetch to:', AGENT_API_URL + '/api/generate');
-                const resp = await fetch(AGENT_API_URL + '/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt })
-                });
-                const data = await resp.json();
+                console.log('Testing AgentAPI.generate...');
+                const data = await AgentAPI.generate(prompt);
                 console.log('Test response:', data);
             } catch (e) {
                 console.error('Test error:', e);
@@ -1535,8 +2299,7 @@
         window.renderResult = async function(sessionId) {
             console.log('Fetching result for session:', sessionId);
             try {
-                const resp = await fetch(`${AGENT_API_URL}/api/session/${sessionId}`);
-                const data = await resp.json();
+                const data = await AgentAPI.getSession(sessionId);
                 console.log('Session data:', data);
 
                 if (data.session && data.session.result) {
@@ -1582,8 +2345,7 @@
         // 列出所有 session
         window.listSessions = async function() {
             try {
-                const resp = await fetch(`${AGENT_API_URL}/api/sessions`);
-                const data = await resp.json();
+                const data = await AgentAPI.listSessions();
                 console.log('Sessions:', data);
                 return data;
             } catch (e) {

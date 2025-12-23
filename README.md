@@ -1,15 +1,88 @@
-# Go Web API 企业级模板项目
+# Vibe Coding - AI 驱动的网页生成平台
 
-基于 Hertz 框架的生产级 Go Web API 项目模板，开箱即用。
+基于 **Claude Agent SDK** 实现的 Vibe Coding 项目，通过自然语言描述即可生成现代化网页。
+
+## 项目简介
+
+**Vibe Coding** 是一种全新的编程方式——用自然语言描述你想要的内容，AI 会帮你生成代码。本项目集成了：
+
+- **Claude Agent SDK** - Anthropic 官方的 AI Agent 开发工具包
+- **Go + Hertz** - 高性能后端服务，处理用户认证和业务逻辑
+- **Node.js Agent Server** - 基于 Claude Agent SDK 的代码生成服务
+- **现代化前端** - 深色科技感 UI，实时预览生成结果
+
+### 核心功能
+
+| 功能 | 描述 |
+|------|------|
+| AI 网页生成 | 输入自然语言描述，自动生成 HTML/CSS 代码 |
+| 实时预览 | 生成过程中实时展示代码，完成后立即预览效果 |
+| 流式输出 | SSE 实时流式传输生成内容 |
+| 用户认证 | JWT 认证保护 API 访问 |
+| 模板库 | 内置 Landing Page、Dashboard、Login 等模板 |
+
+## 页面展示
+
+### 首页 (index.html)
+
+首页采用深色科技感设计，展示 Vibe Coding 品牌形象。
+
+![首页截图](docs/screenshots/index.png)
+
+**主要功能：**
+- 动态打字机效果的 Hero 区域
+- 粒子背景动画
+- 用户注册/登录系统
+- 多语言切换（中/英文）
+- 响应式导航栏
+- 特性介绍展示
+- API 状态实时监控
+
+访问地址：`http://localhost:8888/`
+
+---
+
+### AI 工作台 (workspace.html)
+
+工作台是 Vibe Coding 的核心功能页面，提供 AI 驱动的网页生成体验。
+
+![工作台截图](docs/screenshots/workspace.png)
+
+**主要功能：**
+- **Prompt 输入区** - 输入自然语言描述，如 "创建一个现代化的 SaaS 登录页"
+- **实时代码流** - 流式展示 AI 生成的代码过程
+- **HTML/CSS 分离** - 分标签页查看生成的 HTML 和 CSS
+- **实时预览** - 生成完成后立即预览效果
+- **一键复制** - 快速复制生成的代码
+- **代码编辑器风格** - 语法高亮、行号显示
+
+访问地址：`http://localhost:8888/workspace.html`
+
+---
+
+### AI 生成预览
+
+下图展示 AI 根据 Prompt 生成的网页效果：
+
+![生成效果预览](docs/screenshots/preview.png)
+
+**支持的页面类型：**
+- SaaS Landing Page（落地页）
+- Dashboard（仪表盘）
+- Login/Register Form（登录/注册表单）
+- Blog Card（博客卡片）
+- 以及更多自定义页面...
 
 ## 环境要求
 
 | 依赖 | 版本 | 说明 |
 |------|------|------|
-| Go | >= 1.22 | 编程语言 |
+| Go | >= 1.22 | 后端服务 |
+| Node.js | >= 18.0 | Agent Server |
 | MySQL | >= 8.0 | 主数据库 |
 | Redis | >= 7.0 | 缓存数据库 |
 | Docker | >= 20.0 | 容器化部署（可选）|
+| ANTHROPIC_API_KEY | - | Claude API 密钥 |
 
 ## 性能基准
 
@@ -32,6 +105,15 @@
 - **Singleflight**: 防止缓存击穿
 
 ## 技术栈
+
+### AI 层
+
+| 组件 | 技术选型 | 说明 |
+|------|---------|------|
+| AI SDK | [@anthropic-ai/claude-agent-sdk](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk) | Anthropic 官方 Agent SDK |
+| Agent Server | [Express.js](https://expressjs.com/) | Node.js Web 框架 |
+
+### Go 后端
 
 | 组件 | 技术选型 | 说明 |
 |------|---------|------|
@@ -108,26 +190,56 @@
 - logid 链路追踪
 - 简化 API：`logger.InfoCtxf(ctx, "msg", "key", value)`
 
-### 前端页面 (Vibe Coding)
+### Claude Agent SDK 集成
 
-项目内置了一个现代化的前端页面，主题为 **Vibe Coding**：
+项目使用 **@anthropic-ai/claude-agent-sdk** 实现 AI 代码生成：
+
+```javascript
+import { query } from '@anthropic-ai/claude-agent-sdk';
+
+// 使用 Agent SDK 生成网页
+for await (const message of query({
+    prompt: "Create a modern landing page",
+    options: {
+        allowedTools: ['Read', 'Write', 'Edit'],
+        maxTurns: 5,
+    }
+})) {
+    // 流式处理生成内容
+}
+```
+
+**Agent Server 特性**：
+- 基于 Express.js 构建
+- JWT 认证保护
+- SSE 流式输出
+- 智能模板回退机制
+
+### 前端工作台 (Vibe Coding Workspace)
+
+项目内置了一个现代化的 AI 编程工作台：
 
 - **技术栈**：纯 HTML/CSS/JavaScript，无框架依赖
 - **设计风格**：深色科技感、渐变色、霓虹发光效果
 - **功能模块**：
-  - 用户注册/登录
-  - 个人信息管理
-  - 用户列表浏览
-  - API 状态监控
-  - 响应式设计
+  - AI 网页生成器 - 输入描述即可生成代码
+  - 实时代码预览 - 流式展示生成过程
+  - HTML/CSS 分离展示
+  - 一键复制代码
+  - 用户认证系统
 
+访问工作台：`http://localhost:8888/workspace.html`
 访问首页：`http://localhost:8888/`
 
 ## 项目结构
 
 ```
 .
-├── cmd/                        # 应用入口
+├── agent-server/               # 🤖 Claude Agent SDK 服务
+│   ├── server.js               # Agent Server 主程序
+│   ├── package.json            # Node.js 依赖
+│   └── node_modules/           # 依赖包
+├── cmd/                        # Go 应用入口
 │   └── api/
 │       └── main.go
 ├── config/                     # 配置
@@ -155,9 +267,10 @@
 │   ├── tracing/                # 链路追踪
 │   └── validate/               # 参数校验
 ├── web/                        # 前端页面 (Vibe Coding)
-│   ├── index.html              # 主页面
-│   ├── css/                    # 样式文件
-│   ├── js/                     # JavaScript 模块
+│   ├── index.html              # 首页
+│   ├── workspace.html          # AI 工作台
+│   ├── static/css/             # 样式文件
+│   ├── static/js/              # JavaScript 模块
 │   └── assets/                 # 静态资源
 ├── docs/                       # Swagger 文档
 ├── locales/                    # 多语言文件
@@ -179,15 +292,24 @@
 git clone https://github.com/test-tt/test-tt.git
 cd test-tt
 
-# 2. 安装依赖
+# 2. 安装 Go 依赖
 make tidy
 
-# 3. 初始化数据库（首次运行）
+# 3. 安装 Agent Server 依赖
+cd agent-server && npm install && cd ..
+
+# 4. 配置 API 密钥
+export ANTHROPIC_API_KEY="your-api-key"
+
+# 5. 初始化数据库（首次运行）
 mysql -u root -p < scripts/init.sql
 ```
 
 ### 本地开发
 
+需要同时启动两个服务：
+
+**终端 1 - 启动 Go 后端：**
 ```bash
 # 热重载开发（推荐）
 make dev
@@ -196,6 +318,22 @@ make dev
 make run-dev     # 开发环境
 make run-prod    # 生产环境
 ```
+
+**终端 2 - 启动 Agent Server：**
+```bash
+# 使用 Makefile（推荐，自动配置 JWT）
+make agent       # 生产模式
+make agent-dev   # 开发模式（自动重载）
+
+# 或手动启动
+cd agent-server
+npm start        # 生产模式
+npm run dev      # 开发模式（自动重载）
+```
+
+Agent Server 默认运行在 `http://localhost:3001`
+
+> **注意**：Agent Server 需要与 Go 后端共享 JWT 密钥才能验证用户身份。使用 `make agent` 会自动配置。
 
 ### Docker 部署
 
@@ -214,10 +352,15 @@ make docker-down
 
 ```bash
 # 开发
-make dev          # 热重载开发
+make dev          # 热重载开发（Go 后端）
 make run          # 直接运行
 make run-dev      # 开发环境运行
 make run-prod     # 生产环境运行
+
+# Agent Server
+make agent-install # 安装 Agent Server 依赖
+make agent        # 启动 Agent Server（生产模式）
+make agent-dev    # 启动 Agent Server（开发模式）
 
 # 构建
 make build        # 编译二进制
@@ -282,7 +425,27 @@ kill $(lsof -t -i:8888)
 http://localhost:8888/swagger/index.html
 ```
 
-### 基础接口
+### Agent Server API (端口 3001)
+
+AI 代码生成服务，基于 Claude Agent SDK：
+
+| 方法 | 路径 | 描述 | 认证 |
+|------|------|------|------|
+| POST | `/api/generate` | 创建生成任务 | JWT |
+| GET | `/api/session/:id` | 获取会话状态 | JWT |
+| GET | `/api/stream/:id` | SSE 流式输出 | JWT |
+| GET | `/api/sessions` | 列出所有会话 | JWT |
+| GET | `/health` | 健康检查 | 否 |
+
+**生成示例：**
+```bash
+curl -X POST http://localhost:3001/api/generate \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Create a modern SaaS landing page"}'
+```
+
+### Go 后端基础接口 (端口 8888)
 
 | 方法 | 路径 | 描述 |
 |------|------|------|
@@ -442,6 +605,21 @@ APP_MYSQL_HOST=mysql.example.com
 APP_REDIS_HOST=redis.example.com
 APP_JWT_SECRET=your-secret-key
 ```
+
+**Agent Server 环境变量**：
+
+Agent Server 需要与 Go 后端共享 JWT 配置：
+
+```bash
+# JWT 密钥（必须与 Go 后端一致）
+export JWT_SECRET="your-secret-key-at-least-32-chars"
+export JWT_ISSUER="test-tt"
+
+# Claude API 密钥
+export ANTHROPIC_API_KEY="your-api-key"
+```
+
+> **重要**：使用 `make agent` 或 `make agent-dev` 会自动从 Makefile 中读取默认的 JWT 配置。生产环境请务必修改为安全的密钥。
 
 ### 配置示例
 

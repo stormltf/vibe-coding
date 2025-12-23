@@ -65,6 +65,7 @@ func Register(h *server.Hertz) {
 	pingHandler := handler.NewPingHandler()
 	userHandler := handler.NewUserHandler()
 	authHandler := handler.NewAuthHandler()
+	projectHandler := handler.NewProjectHandler()
 
 	// 静态文件服务 - 手动处理 JS 和 CSS
 	h.GET("/static/js/:file", func(ctx context.Context, c *app.RequestContext) {
@@ -181,6 +182,17 @@ func Register(h *server.Hertz) {
 			authUsers.POST("", userHandler.CreateUser)
 			authUsers.PUT("/:id", userHandler.UpdateUser)
 			authUsers.DELETE("/:id", userHandler.DeleteUser)
+		}
+
+		// 项目相关 - 需要认证
+		projects := v1.Group("/projects")
+		projects.Use(middleware.JWTAuth(getJWTConfig()))
+		{
+			projects.GET("", projectHandler.List)
+			projects.POST("", projectHandler.Create)
+			projects.GET("/:id", projectHandler.Get)
+			projects.PUT("/:id", projectHandler.Update)
+			projects.DELETE("/:id", projectHandler.Delete)
 		}
 	}
 }

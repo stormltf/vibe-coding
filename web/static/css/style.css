@@ -372,18 +372,21 @@ a:hover {
     min-height: 100vh;
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: var(--space-2xl);
     padding: 100px var(--space-lg) var(--space-3xl);
     position: relative;
     z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .hero-content {
-    flex: 1;
-    max-width: 600px;
+    flex: 0 1 500px;
 }
 
 .hero-title {
-    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
     font-weight: 800;
     line-height: 1.2;
     margin-bottom: var(--space-lg);
@@ -442,10 +445,9 @@ a:hover {
 }
 
 .hero-visual {
-    flex: 1;
+    flex: 0 1 450px;
     display: flex;
     justify-content: center;
-    padding-left: var(--space-2xl);
 }
 
 /* Code Window */
@@ -1062,11 +1064,14 @@ a:hover {
     .hero {
         flex-direction: column;
         text-align: center;
+        gap: var(--space-xl);
     }
 
+    .hero-content,
     .hero-visual {
-        padding-left: 0;
-        margin-top: var(--space-2xl);
+        flex: none;
+        width: 100%;
+        max-width: 500px;
     }
 
     .hero-buttons {

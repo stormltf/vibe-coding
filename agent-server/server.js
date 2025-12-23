@@ -10,6 +10,11 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import jwt from 'jsonwebtoken';
+
+// JWT 配置 - 必须与 Go 后端保持一致
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-at-least-32-chars!';
+const JWT_ISSUER = process.env.JWT_ISSUER || 'test-tt';
 
 const app = express();
 app.use(cors());
@@ -20,6 +25,70 @@ app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
+
+/**
+ * JWT 认证中间件
+ * 验证 Authorization header 中的 Bearer token
+ */
+function authMiddleware(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).json({
+            success: false,
+            code: 4001,
+            error: 'Authorization header required'
+        });
+    }
+
+    // 解析 Bearer token
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        return res.status(401).json({
+            success: false,
+            code: 4001,
+            error: 'Invalid authorization format. Use: Bearer <token>'
+        });
+    }
+
+    const token = parts[1];
+
+    try {
+        // 验证 token
+        const decoded = jwt.verify(token, JWT_SECRET, {
+            issuer: JWT_ISSUER,
+            algorithms: ['HS256']
+        });
+
+        // 将用户信息附加到请求对象
+        req.user = {
+            userId: decoded.user_id,
+            username: decoded.username
+        };
+
+        next();
+    } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                code: 4011,
+                error: 'Token has expired'
+            });
+        }
+        if (err.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                code: 4012,
+                error: 'Invalid token'
+            });
+        }
+        return res.status(401).json({
+            success: false,
+            code: 4010,
+            error: 'Authentication failed'
+        });
+    }
+}
 
 // Store generation sessions
 const sessions = new Map();
@@ -528,8 +597,9 @@ function getFallbackTemplate(prompt) {
 
 /**
  * Create new generation session
+ * 需要认证
  */
-app.post('/api/generate', async (req, res) => {
+app.post('/api/generate', authMiddleware, async (req, res) => {
     const { prompt } = req.body;
 
     if (!prompt) {
@@ -563,8 +633,9 @@ app.post('/api/generate', async (req, res) => {
 
 /**
  * Get session status and result
+ * 需要认证
  */
-app.get('/api/session/:sessionId', (req, res) => {
+app.get('/api/session/:sessionId', authMiddleware, (req, res) => {
     const { sessionId } = req.params;
     const session = sessions.get(sessionId);
 
@@ -590,8 +661,9 @@ app.get('/api/session/:sessionId', (req, res) => {
 
 /**
  * Stream generation (SSE) with real-time content
+ * 需要认证
  */
-app.get('/api/stream/:sessionId', (req, res) => {
+app.get('/api/stream/:sessionId', authMiddleware, (req, res) => {
     const { sessionId } = req.params;
     const session = sessions.get(sessionId);
 
@@ -672,8 +744,9 @@ app.get('/api/stream/:sessionId', (req, res) => {
 
 /**
  * List all sessions (for debugging)
+ * 需要认证
  */
-app.get('/api/sessions', (req, res) => {
+app.get('/api/sessions', authMiddleware, (req, res) => {
     const list = [];
     for (const [id, session] of sessions) {
         list.push({

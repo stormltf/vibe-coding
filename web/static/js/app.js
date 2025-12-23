@@ -87,6 +87,8 @@ const App = {
                     UI.success(I18n.t('msg.login.success'));
                     UI.closeModal('login-modal');
                     e.target.reset();
+                    // 登录成功后跳转到workspace
+                    window.location.href = '/workspace.html';
                 } catch (error) {
                     UI.error(error.message);
                 }
@@ -107,6 +109,8 @@ const App = {
                     UI.success(I18n.t('msg.register.success'));
                     UI.closeModal('register-modal');
                     e.target.reset();
+                    // 注册成功后跳转到workspace
+                    window.location.href = '/workspace.html';
                 } catch (error) {
                     UI.error(error.message);
                 }
@@ -221,7 +225,7 @@ const App = {
             });
         }
 
-        // Start button - go to workspace or open register modal
+        // Start button - go to workspace or open login modal
         const btnStart = document.getElementById('btn-start');
         if (btnStart) {
             btnStart.addEventListener('click', () => {
@@ -229,8 +233,8 @@ const App = {
                     // Go to workspace
                     window.location.href = '/workspace.html';
                 } else {
-                    // Open register modal
-                    UI.openModal('register-modal');
+                    // Open login modal
+                    UI.openModal('login-modal');
                 }
             });
         }
