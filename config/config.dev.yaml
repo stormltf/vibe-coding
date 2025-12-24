@@ -38,7 +38,7 @@ log:
   color: true
 
 jwt:
-  secret: dev-secret-key-not-for-production
+  secret: dev-secret-key-at-least-32-chars!
   issuer: test-tt
   expire_time: 24h
 

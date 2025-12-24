@@ -33,6 +33,18 @@ const I18n = {
             'about.quote': '"There\'s a new kind of coding I call \'vibe coding\', where you fully give in to the vibes, embrace exponentials, and forget that the code even exists."',
             'about.cite': '- Andrej Karpathy',
 
+            // How It Works
+            'howItWorks.title': 'How It <span class="highlight">Works</span>',
+            'howItWorks.desc': 'Experience the future of web development. Simply describe what you want, and watch it come to life.',
+            'howItWorks.step1.title': 'Describe Your Vision',
+            'howItWorks.step1.desc': 'Tell the AI what you want to build using natural language. No need to write code - just express your ideas.',
+            'howItWorks.step2.title': 'AI Generates Code',
+            'howItWorks.step2.desc': 'Watch as Claude AI transforms your description into clean, production-ready HTML, CSS, and JavaScript.',
+            'howItWorks.step3.title': 'Preview & Iterate',
+            'howItWorks.step3.desc': 'See your creation in real-time. Refine it through conversation until it\'s exactly what you envisioned.',
+            'howItWorks.step4.title': 'Export & Deploy',
+            'howItWorks.step4.desc': 'Download your code and deploy it anywhere. Full ownership, no vendor lock-in.',
+
             // Features
             'features.title': 'Core <span class="highlight">Principles</span>',
             'features.flow.title': 'Flow State',
@@ -47,6 +59,21 @@ const I18n = {
             'features.less.desc': 'Focus on what matters. Let go of unnecessary complexity and embrace simplicity.',
             'features.community.title': 'Community',
             'features.community.desc': 'Share the vibe with fellow developers. Collaboration amplifies creativity.',
+
+            // Use Cases
+            'useCases.title': 'What You Can <span class="highlight">Build</span>',
+            'useCases.desc': 'From landing pages to complex dashboards, Vibe Coding empowers you to create anything you can imagine.',
+            'useCases.landing.title': 'Landing Pages',
+            'useCases.landing.desc': 'Beautiful, responsive landing pages that convert visitors into customers.',
+            'useCases.dashboard.title': 'Dashboards',
+            'useCases.dashboard.desc': 'Data-rich admin panels and analytics dashboards with charts and tables.',
+            'useCases.forms.title': 'Forms & Surveys',
+            'useCases.forms.desc': 'Interactive forms with validation, multi-step wizards, and surveys.',
+            'useCases.components.title': 'Interactive Components',
+            'useCases.components.desc': 'Carousels, modals, accordions, and other engaging UI components.',
+
+            // Tech Stack
+            'tech.title': 'Powered by <span class="highlight">Modern Tech</span>',
 
             // Demo / API Playground
             'demo.title': 'API <span class="highlight">Playground</span>',
@@ -95,6 +122,7 @@ const I18n = {
 
             // Workspace
             'workspace.project': 'New Project',
+            'workspace.renameHint': 'Double-click to rename',
             'workspace.preview': 'Preview',
             'workspace.code': 'Code',
             'workspace.home': 'Home',
@@ -118,6 +146,15 @@ const I18n = {
             'workspace.generate.success': 'Page generated successfully!',
             'workspace.generate.failed': 'Generation failed. Please try again or check if the AI service is available.',
             'workspace.generate.error': 'An error occurred during generation. Please try again later.',
+            'workspace.generate.modifying': 'Modifying your page...',
+            'workspace.generate.generating': 'Generating your page...',
+            'workspace.modify.success': 'Page modified successfully!',
+            'workspace.thinking.title': 'AI Thinking Process',
+            'workspace.thinking.writing': 'Writing',
+            'workspace.thinking.thinking': 'Thinking',
+            'workspace.thinking.completed': 'Completed',
+            'workspace.thinking.error': 'Error',
+            'workspace.thinking.processing': 'Processing',
 
             // Project Management
             'workspace.projects': 'Projects',
@@ -163,6 +200,18 @@ const I18n = {
             'about.quote': '"有一种新的编程方式，我称之为 \'vibe coding\'，你完全沉浸在氛围中，拥抱指数级变化，忘记代码的存在。"',
             'about.cite': '- Andrej Karpathy',
 
+            // 工作流程
+            'howItWorks.title': '如何<span class="highlight">使用</span>',
+            'howItWorks.desc': '体验 Web 开发的未来。只需描述你想要的，看着它变为现实。',
+            'howItWorks.step1.title': '描述你的想法',
+            'howItWorks.step1.desc': '用自然语言告诉 AI 你想构建什么。无需编写代码 - 只需表达你的想法。',
+            'howItWorks.step2.title': 'AI 生成代码',
+            'howItWorks.step2.desc': '看着 Claude AI 将你的描述转化为干净、可用于生产的 HTML、CSS 和 JavaScript 代码。',
+            'howItWorks.step3.title': '预览与迭代',
+            'howItWorks.step3.desc': '实时查看你的创作。通过对话不断优化，直到完全符合你的期望。',
+            'howItWorks.step4.title': '导出与部署',
+            'howItWorks.step4.desc': '下载你的代码并部署到任何地方。完全拥有所有权，没有供应商锁定。',
+
             // 特性
             'features.title': '核心<span class="highlight">原则</span>',
             'features.flow.title': '心流状态',
@@ -177,6 +226,21 @@ const I18n = {
             'features.less.desc': '专注于重要的事情。放下不必要的复杂性，拥抱简单。',
             'features.community.title': '社区',
             'features.community.desc': '与开发者同伴分享氛围。协作放大创造力。',
+
+            // 使用场景
+            'useCases.title': '你可以<span class="highlight">构建</span>',
+            'useCases.desc': '从落地页到复杂的仪表盘，Vibe Coding 让你能够创建任何你能想象的东西。',
+            'useCases.landing.title': '落地页',
+            'useCases.landing.desc': '精美、响应式的落地页，将访客转化为客户。',
+            'useCases.dashboard.title': '仪表盘',
+            'useCases.dashboard.desc': '包含图表和表格的数据丰富的管理面板和分析仪表盘。',
+            'useCases.forms.title': '表单与问卷',
+            'useCases.forms.desc': '带验证功能的交互式表单、多步骤向导和问卷调查。',
+            'useCases.components.title': '交互组件',
+            'useCases.components.desc': '轮播图、弹窗、手风琴等吸引人的 UI 组件。',
+
+            // 技术栈
+            'tech.title': '由<span class="highlight">现代技术</span>驱动',
 
             // 演示 / API 操场
             'demo.title': 'API <span class="highlight">演练场</span>',
@@ -225,6 +289,7 @@ const I18n = {
 
             // 工作区
             'workspace.project': '新项目',
+            'workspace.renameHint': '双击重命名',
             'workspace.preview': '预览',
             'workspace.code': '代码',
             'workspace.home': '首页',
@@ -248,6 +313,15 @@ const I18n = {
             'workspace.generate.success': '页面生成成功！',
             'workspace.generate.failed': '生成失败，请重试或检查 AI 服务是否可用。',
             'workspace.generate.error': '生成过程中发生错误，请稍后重试。',
+            'workspace.generate.modifying': '正在修改页面...',
+            'workspace.generate.generating': '正在生成页面...',
+            'workspace.modify.success': '页面修改成功！',
+            'workspace.thinking.title': 'AI 思考过程',
+            'workspace.thinking.writing': '正在编写',
+            'workspace.thinking.thinking': '正在思考',
+            'workspace.thinking.completed': '已完成',
+            'workspace.thinking.error': '出错',
+            'workspace.thinking.processing': '处理中',
 
             // 项目管理
             'workspace.projects': '项目',
