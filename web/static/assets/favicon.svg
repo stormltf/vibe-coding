@@ -1,10 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#001020"/>
+      <stop offset="100%" style="stop-color:#002040"/>
     </linearGradient>
+    <linearGradient id="glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff"/>
+      <stop offset="100%" style="stop-color:#00ff88"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <rect width="100" height="100" rx="20" fill="url(#grad)"/>
-  <text x="50" y="68" font-family="monospace" font-size="40" font-weight="bold" fill="white" text-anchor="middle">&lt;/&gt;</text>
+  <!-- 深色背景 -->
+  <rect width="100" height="100" rx="18" fill="url(#bg-grad)"/>
+  <!-- 边框光晕 -->
+  <rect x="3" y="3" width="94" height="94" rx="15" fill="none" stroke="url(#glow-grad)" stroke-width="2" opacity="0.6"/>
+  <!-- V 字形代码符号 -->
+  <g filter="url(#glow)">
+    <path d="M28 30 L50 65 L72 30" fill="none" stroke="url(#glow-grad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="50" cy="75" r="4" fill="#00ff88"/>
+  </g>
 </svg>

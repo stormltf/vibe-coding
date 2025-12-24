@@ -126,25 +126,30 @@ agent-dev:
 	@echo "JWT_SECRET is set: $(if $(JWT_SECRET),yes,no)"
 	cd $(AGENT_DIR) && npm run dev
 
-## all: 同时启动 Go 后端和 Agent Server (需要两个终端)
-all:
-	@echo "Please run in separate terminals:"
-	@echo "  Terminal 1: make dev"
-	@echo "  Terminal 2: make agent"
-	@echo ""
-	@echo "Or use: make start-all (background mode)"
+## start: 启动所有服务 (Go 后端 + Agent Server)
+start:
+	@./scripts/dev.sh start
 
-## start-all: 后台启动所有服务
-start-all:
-	@echo "Starting all services in background..."
-	@make dev &
-	@sleep 2
-	@make agent &
-	@echo "Services started. Use 'make stop-all' to stop."
+## stop: 停止所有服务
+stop:
+	@./scripts/dev.sh stop
 
-## stop-all: 停止所有服务
-stop-all:
-	@echo "Stopping all services..."
-	@pkill -f "air" || true
-	@pkill -f "node.*agent-server" || true
-	@echo "Services stopped"
+## restart: 重启所有服务
+restart:
+	@./scripts/dev.sh restart
+
+## status: 查看服务状态
+status:
+	@./scripts/dev.sh status
+
+## logs: 查看所有服务日志
+logs:
+	@./scripts/dev.sh logs
+
+## logs-go: 查看 Go 服务日志
+logs-go:
+	@./scripts/dev.sh logs go
+
+## logs-agent: 查看 Agent 服务日志
+logs-agent:
+	@./scripts/dev.sh logs agent

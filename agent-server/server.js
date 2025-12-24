@@ -109,52 +109,262 @@ Always output the complete HTML code that can be directly rendered in a browser.
 Do NOT use external CSS files or JavaScript libraries unless specifically requested.
 Respond with ONLY the HTML code, no explanations before or after.`;
 
+// System prompt for modifications (multi-turn conversation)
+const MODIFY_SYSTEM_PROMPT = `You are an expert web developer assistant. The user has an existing web page and wants to make modifications or additions.
+
+CRITICAL RULES - YOU MUST FOLLOW:
+1. You will receive the CURRENT HTML CODE of the page - this is the foundation you MUST build upon
+2. NEVER discard the existing content - keep ALL existing sections, elements, and styling
+3. ADD the new requested content to the existing page structure
+4. If user says "add X", you must INSERT X into the existing page, not replace the page with X
+5. Maintain consistent styling with the existing design (colors, fonts, spacing)
+6. Output the COMPLETE modified HTML including ALL original content plus the new additions
+
+Example:
+- If existing page has "Introduction to Changsha" section
+- And user says "add introduction to Mao Zedong"
+- You MUST output: Original Changsha content + New Mao Zedong section
+
+Always output the complete HTML code that can be directly rendered in a browser.
+Respond with ONLY the HTML code, no explanations before or after.`;
+
 /**
- * Generate web page using Claude Agent SDK with streaming
+ * Build conversation context from history
  */
-async function generateWithAgent(prompt, sessionId) {
+function buildConversationContext(history, currentHtml) {
+    let context = '';
+
+    if (history && history.length > 0) {
+        context += 'Previous conversation:\n';
+        history.forEach((msg, index) => {
+            const role = msg.type === 'user' ? 'User' : 'Assistant';
+            // Limit message length in context to avoid token overflow
+            const content = msg.content.length > 500
+                ? msg.content.substring(0, 500) + '...'
+                : msg.content;
+            context += `${role}: ${content}\n`;
+        });
+        context += '\n';
+    }
+
+    if (currentHtml) {
+        context += `=== CURRENT PAGE HTML (YOU MUST PRESERVE THIS) ===
+\`\`\`html
+${currentHtml}
+\`\`\`
+=== END OF CURRENT PAGE ===
+
+`;
+    }
+
+    return context;
+}
+
+/**
+ * Generate web page using Claude Agent SDK
+ * Attempts to use Extended Thinking via maxThinkingTokens option
+ */
+async function generateWithAgent(prompt, sessionId, history = [], currentHtml = '') {
     const session = sessions.get(sessionId);
     if (!session) return;
 
     session.status = 'generating';
     session.messages.push({ role: 'user', content: prompt });
-    session.streamContent = ''; // 用于存储流式内容
+    session.streamContent = '';
+
+    // Determine if this is a modification or new generation
+    const isModification = currentHtml && currentHtml.trim().length > 0;
+    const systemPrompt = isModification ? MODIFY_SYSTEM_PROMPT : SYSTEM_PROMPT;
+
+    // Build context from conversation history
+    const conversationContext = buildConversationContext(history, currentHtml);
+
+    // Ensure thinking steps array exists
+    if (!session.thinkingSteps) {
+        session.thinkingSteps = [];
+    }
+
+    // Add initial step
+    session.thinkingSteps.push({
+        timestamp: new Date().toISOString(),
+        type: 'init',
+        description: 'Starting Claude Agent with Extended Thinking...',
+        icon: 'init'
+    });
 
     try {
-        let fullResponse = '';
+        // Build user message with context
+        let userMessage = '';
+        if (conversationContext) {
+            userMessage += conversationContext;
+        }
+        if (isModification) {
+            userMessage += `User modification request: "${prompt}"
 
-        // Use Claude Agent SDK query
-        for await (const message of query({
-            prompt: `${SYSTEM_PROMPT}\n\nUser request: ${prompt}\n\nGenerate a complete HTML page with embedded CSS for this request. Output ONLY the HTML code.`,
+IMPORTANT: The user wants to MODIFY/ADD to the existing page shown above.
+- DO NOT create a new page from scratch
+- KEEP all existing content from the current HTML code
+- ADD or MODIFY only what the user requested
+- Output the COMPLETE HTML with both old and new content combined.`;
+        } else {
+            userMessage += `User request: ${prompt}\n\nGenerate a complete HTML page with embedded CSS for this request. Output ONLY the HTML code.`;
+        }
+
+        console.log('Generating with Claude Agent SDK (Extended Thinking):', {
+            isModification,
+            historyLength: history.length,
+            hasCurrentHtml: !!currentHtml
+        });
+
+        // Create temporary directory for agent
+        const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibe-agent-'));
+
+        // Call Claude Agent SDK with Extended Thinking enabled
+        const queryGenerator = query({
+            prompt: userMessage,
             options: {
-                allowedTools: ['Read', 'Write', 'Edit'],
-                maxTurns: 5,
+                systemPrompt: systemPrompt,
+                cwd: tempDir,
+                maxTurns: 1,
+                tools: [], // No tools needed for HTML generation
+                model: 'claude-opus-4-5-20251101', // Claude Opus 4.5 with Extended Thinking
+                maxThinkingTokens: 8000, // Enable Extended Thinking!
+                includePartialMessages: true, // Get streaming events
             }
-        })) {
-            if (message.type === 'assistant' && message.message?.content) {
-                for (const block of message.message.content) {
-                    if (block.type === 'text') {
-                        fullResponse += block.text;
-                        // 更新流式内容
+        });
+
+        let fullResponse = '';
+        let thinkingContent = '';
+        let hasThinkingBlock = false;
+
+        // Process streaming events from the SDK
+        for await (const message of queryGenerator) {
+            console.log('SDK Message:', message.type, message.subtype || '');
+
+            // Handle partial/streaming messages
+            if (message.type === 'stream_event' && message.event) {
+                const event = message.event;
+
+                if (event.type === 'content_block_start') {
+                    if (event.content_block?.type === 'thinking') {
+                        hasThinkingBlock = true;
+                        session.thinkingSteps.push({
+                            timestamp: new Date().toISOString(),
+                            type: 'thinking',
+                            description: 'AI is reasoning...',
+                            thinking: '',
+                            icon: 'thinking'
+                        });
+                        console.log('Thinking block started');
+                    } else if (event.content_block?.type === 'text') {
+                        session.thinkingSteps.push({
+                            timestamp: new Date().toISOString(),
+                            type: 'coding',
+                            description: 'Generating HTML and CSS code...',
+                            icon: 'coding'
+                        });
+                        console.log('Text block started');
+                    }
+                } else if (event.type === 'content_block_delta') {
+                    if (event.delta?.type === 'thinking_delta') {
+                        thinkingContent += event.delta.thinking || '';
+                        // Update the last thinking step
+                        const thinkingStep = session.thinkingSteps.find(s => s.type === 'thinking');
+                        if (thinkingStep) {
+                            thinkingStep.thinking = thinkingContent;
+                            const preview = thinkingContent.length > 100
+                                ? thinkingContent.substring(thinkingContent.length - 100)
+                                : thinkingContent;
+                            thinkingStep.description = preview.replace(/\n/g, ' ').trim() || 'AI is reasoning...';
+                        }
+                    } else if (event.delta?.type === 'text_delta') {
+                        fullResponse += event.delta.text || '';
                         session.streamContent = fullResponse;
+                    }
+                } else if (event.type === 'content_block_stop') {
+                    const thinkingStep = session.thinkingSteps.find(s => s.type === 'thinking' && s.thinking);
+                    if (thinkingStep) {
+                        thinkingStep.description = 'Completed reasoning';
+                        console.log('Thinking completed:', thinkingContent.length, 'chars');
                     }
                 }
             }
 
+            // Handle final result message
             if (message.type === 'result') {
-                session.status = message.subtype === 'success' ? 'completed' : 'error';
+                console.log('Result received:', message.subtype);
+                if (message.result) {
+                    fullResponse = message.result;
+                    session.streamContent = fullResponse;
+                }
+            }
+
+            // Handle assistant messages (non-streaming)
+            if (message.type === 'assistant' && message.message) {
+                const content = message.message.content || [];
+                for (const block of content) {
+                    if (block.type === 'thinking') {
+                        hasThinkingBlock = true;
+                        thinkingContent = block.thinking || '';
+                        session.thinkingSteps.push({
+                            timestamp: new Date().toISOString(),
+                            type: 'thinking',
+                            description: 'Completed reasoning',
+                            thinking: thinkingContent,
+                            icon: 'thinking'
+                        });
+                        console.log('Got thinking block:', thinkingContent.length, 'chars');
+                    } else if (block.type === 'text') {
+                        fullResponse = block.text || '';
+                        session.streamContent = fullResponse;
+                    }
+                }
             }
         }
+
+        // Clean up temp directory
+        try {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        } catch (e) {
+            console.warn('Failed to clean temp dir:', e.message);
+        }
+
+        // If no thinking was captured, add a note
+        if (!hasThinkingBlock) {
+            session.thinkingSteps.push({
+                timestamp: new Date().toISOString(),
+                type: 'info',
+                description: 'Extended Thinking not available for this model/request',
+                icon: 'info'
+            });
+        }
+
+        console.log('Generation stats:', {
+            responseLength: fullResponse.length,
+            thinkingLength: thinkingContent.length,
+            hasThinking: hasThinkingBlock
+        });
 
         // Extract HTML from response
         const htmlCode = extractHTML(fullResponse);
         const cssCode = extractCSS(htmlCode);
 
+        // Add completion step
+        session.thinkingSteps.push({
+            timestamp: new Date().toISOString(),
+            type: 'complete',
+            description: 'Generation completed successfully!',
+            detail: `Generated ${htmlCode.length} characters of HTML`,
+            icon: 'success'
+        });
+
         // Store result
         session.result = {
             html: htmlCode,
             css: cssCode,
-            message: generateSummary(prompt)
+            message: isModification
+                ? generateModificationSummary(prompt)
+                : generateSummary(prompt)
         };
         session.status = 'completed';
         session.messages.push({
@@ -162,22 +372,77 @@ async function generateWithAgent(prompt, sessionId) {
             content: session.result.message
         });
 
+        console.log('Generation completed:', {
+            htmlLength: htmlCode.length,
+            stepsCount: session.thinkingSteps.length
+        });
+
     } catch (error) {
         console.error('Generation error:', error);
+
+        // Add error step
+        session.thinkingSteps.push({
+            timestamp: new Date().toISOString(),
+            type: 'error',
+            description: `Error: ${error.message}`,
+            detail: error.message,
+            icon: 'error'
+        });
+
         session.status = 'error';
         session.error = error.message;
 
-        // Fallback to a template if SDK fails
-        const fallback = getFallbackTemplate(prompt);
-        if (fallback) {
-            session.result = fallback;
-            session.status = 'completed';
-            session.messages.push({
-                role: 'assistant',
-                content: fallback.message + '\n\n(Note: Using fallback template)'
+        // Fallback to template if SDK fails
+        if (!isModification) {
+            const fallback = getFallbackTemplate(prompt);
+            if (fallback) {
+                session.thinkingSteps.push({
+                    timestamp: new Date().toISOString(),
+                    type: 'fallback',
+                    description: 'Using pre-built template as fallback...',
+                    icon: 'template'
+                });
+
+                session.thinkingSteps.push({
+                    timestamp: new Date().toISOString(),
+                    type: 'complete',
+                    description: 'Template applied successfully!',
+                    icon: 'success'
+                });
+
+                session.result = fallback;
+                session.status = 'completed';
+                session.messages.push({
+                    role: 'assistant',
+                    content: fallback.message + '\n\n(Note: Using fallback template due to API error)'
+                });
+            }
+        } else {
+            session.thinkingSteps.push({
+                timestamp: new Date().toISOString(),
+                type: 'rollback',
+                description: 'Keeping original page (modification failed)',
+                icon: 'rollback'
             });
+
+            session.result = {
+                html: currentHtml,
+                css: extractCSS(currentHtml),
+                message: 'Failed to apply modifications. Please try again.'
+            };
+            session.status = 'completed';
         }
     }
+}
+
+/**
+ * Generate summary for modification requests
+ */
+function generateModificationSummary(prompt) {
+    return `I've applied the following changes based on your request:\n\n` +
+        `**"${prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt}"**\n\n` +
+        `The modifications have been made while preserving the existing structure. ` +
+        `Feel free to request more changes!`;
 }
 
 /**
@@ -598,9 +863,14 @@ function getFallbackTemplate(prompt) {
 /**
  * Create new generation session
  * 需要认证
+ *
+ * Request body:
+ * - prompt: string (required) - The user's current request
+ * - messages: array (optional) - Previous conversation history [{type: 'user'|'ai', content: string}]
+ * - currentHtml: string (optional) - The current HTML code for modifications
  */
 app.post('/api/generate', authMiddleware, async (req, res) => {
-    const { prompt } = req.body;
+    const { prompt, messages = [], currentHtml = '' } = req.body;
 
     if (!prompt) {
         return res.status(400).json({
@@ -611,7 +881,16 @@ app.post('/api/generate', authMiddleware, async (req, res) => {
 
     const sessionId = uuidv4();
 
-    // Create session
+    console.log('New generation request:', {
+        prompt: prompt.substring(0, 50) + '...',
+        historyLength: messages.length,
+        hasCurrentHtml: !!currentHtml
+    });
+
+    // Determine if this is a modification
+    const isModification = currentHtml && currentHtml.trim().length > 0;
+
+    // Create session with initial thinking step
     sessions.set(sessionId, {
         id: sessionId,
         prompt,
@@ -619,11 +898,18 @@ app.post('/api/generate', authMiddleware, async (req, res) => {
         messages: [],
         result: null,
         error: null,
-        createdAt: new Date()
+        createdAt: new Date(),
+        streamContent: '',
+        thinkingSteps: [{
+            timestamp: new Date().toISOString(),
+            type: 'init',
+            description: isModification ? 'Received modification request...' : 'Received your request...',
+            icon: 'init'
+        }]
     });
 
-    // Start generation in background
-    generateWithAgent(prompt, sessionId);
+    // Start generation in background with conversation context
+    generateWithAgent(prompt, sessionId, messages, currentHtml);
 
     res.json({
         success: true,
@@ -654,7 +940,8 @@ app.get('/api/session/:sessionId', authMiddleware, (req, res) => {
             messages: session.messages,
             result: session.result,
             error: session.error,
-            streamContent: session.streamContent || '' // 返回流式内容供前端显示
+            streamContent: session.streamContent || '', // 返回流式内容供前端显示
+            thinkingSteps: session.thinkingSteps || [] // 返回思考步骤
         }
     });
 });
@@ -680,12 +967,27 @@ app.get('/api/stream/:sessionId', authMiddleware, (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     let lastContentLength = 0;
+    let lastStepsCount = 0;
 
     const sendUpdate = () => {
         const currentSession = sessions.get(sessionId);
         if (!currentSession) {
             res.end();
             return true;
+        }
+
+        // 发送新的思考步骤
+        const steps = currentSession.thinkingSteps || [];
+        if (steps.length > lastStepsCount) {
+            const newSteps = steps.slice(lastStepsCount);
+            lastStepsCount = steps.length;
+
+            newSteps.forEach(step => {
+                res.write(`data: ${JSON.stringify({
+                    type: 'thinking',
+                    step: step
+                })}\n\n`);
+            });
         }
 
         // 发送流式内容增量
@@ -705,7 +1007,8 @@ app.get('/api/stream/:sessionId', authMiddleware, (req, res) => {
             res.write(`data: ${JSON.stringify({
                 type: 'complete',
                 status: 'completed',
-                result: currentSession.result
+                result: currentSession.result,
+                thinkingSteps: currentSession.thinkingSteps || []
             })}\n\n`);
             res.end();
             return true;
@@ -716,7 +1019,8 @@ app.get('/api/stream/:sessionId', authMiddleware, (req, res) => {
                 type: 'error',
                 status: 'error',
                 error: currentSession.error,
-                result: currentSession.result // fallback result if available
+                result: currentSession.result,
+                thinkingSteps: currentSession.thinkingSteps || []
             })}\n\n`);
             res.end();
             return true;

@@ -8,24 +8,99 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --bg-dark: #0f172a;
-            --bg-card: #1e293b;
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --success: #10b981;
-            --error: #ef4444;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+            /* 青蓝色科技感配色 */
+            --primary: #00d4ff;
+            --primary-light: #5ce1ff;
+            --primary-dark: #00a8cc;
+            --primary-glow: rgba(0, 212, 255, 0.4);
+            --accent: #00ff88;
+            --accent-glow: rgba(0, 255, 136, 0.3);
+
+            /* 深色背景 */
+            --bg-deep: #000810;
+            --bg-dark: #001020;
+            --bg-card: rgba(0, 20, 40, 0.8);
+            --bg-elevated: rgba(0, 40, 60, 0.6);
+            --bg-hover: rgba(0, 60, 80, 0.5);
+
+            /* 文字 */
+            --text: #f0f9ff;
+            --text-secondary: #bae6fd;
+            --text-muted: #7dd3fc;
+            --text-dim: #38bdf8;
+
+            /* 边框 */
+            --border: rgba(0, 212, 255, 0.2);
+            --border-light: rgba(0, 212, 255, 0.3);
+            --border-glow: rgba(0, 212, 255, 0.5);
+
+            /* 状态色 */
+            --success: #00ff88;
+            --success-glow: rgba(0, 255, 136, 0.3);
+            --error: #ff4757;
+            --error-glow: rgba(255, 71, 87, 0.3);
+            --warning: #fbbf24;
+
+            /* 渐变 */
+            --gradient-primary: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            --gradient-accent: linear-gradient(135deg, #0ea5e9 0%, #00d4ff 100%);
+            --gradient-surface: linear-gradient(180deg, rgba(0, 20, 40, 0.9) 0%, rgba(0, 8, 16, 0.95) 100%);
+            --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+
+            /* 阴影 */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
+            --shadow-glow: 0 0 40px var(--primary-glow);
+
+            /* 动画 */
+            --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
         body {
             font-family: var(--font-sans);
-            background: var(--bg-dark);
+            background: var(--bg-deep);
             color: var(--text);
             height: 100vh;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 全局背景效果 */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 100% 80% at 50% -30%, rgba(0, 212, 255, 0.1) 0%, transparent 60%),
+                radial-gradient(ellipse 80% 60% at 100% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse 80% 60% at 0% 80%, rgba(14, 165, 233, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
         }
 
         /* 布局 */
@@ -33,144 +108,214 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            position: relative;
+            z-index: 1;
         }
 
-        /* 顶部导航 */
+        /* 顶部导航 - 玻璃态效果 */
         .header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 20px;
+            padding: 0 24px;
             background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
-            height: 56px;
+            height: 64px;
+            position: relative;
+            z-index: 50;
         }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary-glow), transparent);
+        }
+
         .header-left {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 20px;
         }
         .back-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             color: var(--text-muted);
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
+            border: 1px solid transparent;
         }
         .back-btn:hover {
-            background: rgba(255,255,255,0.1);
+            background: var(--bg-hover);
             color: var(--text);
+            border-color: var(--border-light);
+            transform: translateX(-2px);
         }
         .project-name {
             font-weight: 600;
-            font-size: 15px;
+            font-size: 16px;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all var(--transition-normal);
         }
+        .project-name:hover {
+            background: var(--bg-hover);
+        }
+
         .header-center {
             display: flex;
             gap: 4px;
-            background: rgba(0,0,0,0.3);
+            background: var(--bg-elevated);
             padding: 4px;
-            border-radius: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
         }
         .view-tab {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
+            gap: 8px;
+            padding: 10px 20px;
             border: none;
             background: transparent;
             color: var(--text-muted);
             font-size: 14px;
-            border-radius: 6px;
+            font-weight: 500;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
         }
-        .view-tab:hover { color: var(--text); }
+        .view-tab:hover {
+            color: var(--text);
+            background: var(--bg-hover);
+        }
         .view-tab.active {
-            background: var(--primary);
+            background: var(--gradient-primary);
             color: white;
+            box-shadow: 0 4px 12px var(--primary-glow);
         }
+        .view-tab svg {
+            opacity: 0.8;
+        }
+        .view-tab.active svg {
+            opacity: 1;
+        }
+
         .header-right {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
         }
         .user-btn {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            border-radius: 20px;
+            gap: 10px;
+            padding: 6px 16px 6px 6px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 100px;
             color: var(--text);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
         }
-        .user-btn:hover { background: rgba(255,255,255,0.15); }
+        .user-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+            box-shadow: var(--shadow-sm);
+        }
         .user-avatar {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), #a855f7);
+            background: var(--gradient-primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
+            box-shadow: 0 2px 8px var(--primary-glow);
         }
+        .user-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
         .user-menu {
             position: relative;
         }
         .user-dropdown {
             position: absolute;
-            top: calc(100% + 8px);
+            top: calc(100% + 12px);
             right: 0;
             background: var(--bg-card);
+            backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            min-width: 200px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border-radius: 16px;
+            min-width: 220px;
+            box-shadow: var(--shadow-lg);
             opacity: 0;
             visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.2s;
+            transform: translateY(-8px) scale(0.96);
+            transition: all var(--transition-normal);
             z-index: 100;
+            overflow: hidden;
         }
         .user-dropdown.show {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
         }
         .dropdown-header {
-            padding: 16px;
+            padding: 20px;
+            background: var(--bg-elevated);
             border-bottom: 1px solid var(--border);
         }
-        .dropdown-header .name { font-weight: 600; }
-        .dropdown-header .email { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+        .dropdown-header .name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .dropdown-header .email {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
         .dropdown-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             width: 100%;
-            padding: 12px 16px;
+            padding: 14px 20px;
             background: none;
             border: none;
             color: var(--text-muted);
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all var(--transition-fast);
         }
         .dropdown-item:hover {
-            background: rgba(255,255,255,0.05);
+            background: var(--bg-hover);
             color: var(--text);
         }
-        .dropdown-item svg { width: 18px; height: 18px; }
+        .dropdown-item svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.7;
+        }
+        .dropdown-item:hover svg {
+            opacity: 1;
+        }
 
         /* 主内容区 */
         .main-content {
@@ -179,19 +324,260 @@
             overflow: hidden;
         }
 
+        /* 项目侧边栏 */
+        .projects-sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition-normal);
+        }
+        .projects-sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+            border-right: none;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .btn-new-project {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            margin: 16px;
+            box-shadow: 0 4px 16px var(--primary-glow);
+        }
+        .btn-new-project:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px var(--primary-glow);
+        }
+        .btn-new-project:active {
+            transform: translateY(0);
+        }
+        .btn-new-project svg { width: 16px; height: 16px; }
+
+        .projects-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px;
+        }
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            margin-bottom: 4px;
+            border: 1px solid transparent;
+        }
+        .project-item:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+        .project-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--border-glow);
+        }
+        .project-item-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all var(--transition-normal);
+        }
+        .project-item:hover .project-item-icon {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .project-item:hover .project-item-icon svg {
+            color: white;
+        }
+        .project-item.active .project-item-icon {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px var(--primary-glow);
+        }
+        .project-item.active .project-item-icon svg {
+            color: white;
+        }
+        .project-item-icon svg {
+            width: 16px;
+            height: 16px;
+            color: var(--text-muted);
+            transition: all var(--transition-normal);
+        }
+        .project-item-info { flex: 1; min-width: 0; }
+        .project-item-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: text;
+        }
+        .project-item-name-input {
+            width: 100%;
+            padding: 4px 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            outline: none;
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+        .project-item-time {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .project-item-delete {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: all var(--transition-normal);
+        }
+        .project-item:hover .project-item-delete { opacity: 1; }
+        .project-item-delete:hover {
+            color: var(--error);
+            background: var(--error-glow);
+        }
+
+        .sidebar-toggle {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-toggle-sidebar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+        .btn-toggle-sidebar:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+            border-color: var(--border-light);
+        }
+        .projects-empty {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-muted);
+        }
+        .projects-empty svg {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+            color: var(--primary);
+        }
+        .projects-empty p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .btn-expand-sidebar {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 64px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            z-index: 100;
+            transition: all var(--transition-normal);
+        }
+        .btn-expand-sidebar:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+            width: 32px;
+        }
+        .projects-sidebar.collapsed ~ .btn-expand-sidebar { display: flex; }
+
         /* 左侧聊天面板 */
         .chat-panel {
             width: 480px;
-            min-width: 360px;
+            min-width: 380px;
             display: flex;
             flex-direction: column;
-            background: var(--bg-dark);
+            background: var(--gradient-surface);
             border-right: 1px solid var(--border);
+            position: relative;
         }
+        .chat-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: var(--gradient-glow);
+            pointer-events: none;
+        }
+
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 24px;
+            position: relative;
+            z-index: 1;
         }
 
         /* 欢迎界面 */
@@ -202,73 +588,108 @@
             justify-content: center;
             height: 100%;
             text-align: center;
-            padding: 40px;
+            padding: 48px;
         }
         .welcome-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary), #a855f7);
-            border-radius: 50%;
+            width: 88px;
+            height: 88px;
+            background: var(--gradient-primary);
+            border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 32px var(--primary-glow);
+            position: relative;
         }
-        .welcome-icon svg { width: 40px; height: 40px; color: white; }
+        .welcome-icon::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            background: var(--gradient-primary);
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.4;
+            filter: blur(12px);
+        }
+        .welcome-icon svg {
+            width: 44px;
+            height: 44px;
+            color: white;
+        }
         .welcome h2 {
-            font-size: 24px;
+            font-size: 28px;
+            font-weight: 700;
             margin-bottom: 12px;
-            background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+            background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
         }
-        .welcome p { color: var(--text-muted); margin-bottom: 32px; }
+        .welcome p {
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 36px;
+            max-width: 320px;
+        }
         .suggestions {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
         }
         .suggestion {
-            padding: 10px 16px;
-            background: var(--bg-card);
+            padding: 12px 20px;
+            background: var(--bg-elevated);
             border: 1px solid var(--border);
-            border-radius: 20px;
+            border-radius: 100px;
             color: var(--text-muted);
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
         }
         .suggestion:hover {
             border-color: var(--primary);
             color: var(--text);
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
         }
 
         /* 消息样式 */
         .message {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            animation: fadeIn 0.3s ease;
+            gap: 14px;
+            margin-bottom: 24px;
+            animation: messageIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         .message-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), #a855f7);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--gradient-primary);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
             font-weight: 600;
             flex-shrink: 0;
+            box-shadow: 0 2px 8px var(--primary-glow);
         }
         .message-avatar.ai {
-            background: linear-gradient(135deg, #10b981, #06b6d4);
+            background: var(--gradient-accent);
+            box-shadow: 0 2px 8px var(--accent-glow);
         }
         .message-content {
             flex: 1;
@@ -277,104 +698,142 @@
         .message-header {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
-        .message-name { font-weight: 600; font-size: 14px; }
-        .message-time { font-size: 12px; color: var(--text-muted); }
-        .message-text {
+        .message-name {
+            font-weight: 600;
             font-size: 14px;
-            line-height: 1.6;
             color: var(--text);
         }
-        .message-text p { margin-bottom: 12px; }
+        .message-time {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .message-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+        .message-text p { margin-bottom: 14px; }
         .message-text p:last-child { margin-bottom: 0; }
         .message-text code {
-            background: rgba(0,0,0,0.3);
-            padding: 2px 6px;
-            border-radius: 4px;
+            background: var(--bg-elevated);
+            padding: 3px 8px;
+            border-radius: 6px;
             font-family: var(--font-mono);
             font-size: 13px;
+            color: var(--accent);
+            border: 1px solid var(--border);
         }
         .message-text pre {
-            background: var(--bg-card);
+            background: var(--bg-dark);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
+            border-radius: 12px;
+            padding: 18px;
             overflow-x: auto;
-            margin: 12px 0;
+            margin: 16px 0;
         }
         .message-text pre code {
             background: none;
             padding: 0;
+            border: none;
+            color: var(--text-secondary);
         }
+
         .typing-indicator {
             display: flex;
-            gap: 4px;
-            padding: 8px 0;
+            gap: 5px;
+            padding: 10px 0;
         }
         .typing-indicator span {
             width: 8px;
             height: 8px;
-            background: var(--text-muted);
+            background: var(--accent);
             border-radius: 50%;
-            animation: typing 1.4s infinite;
+            animation: typingBounce 1.4s infinite;
         }
         .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
         .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-            30% { transform: translateY(-8px); opacity: 1; }
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
         }
 
         /* 输入区域 */
         .chat-input-area {
-            padding: 16px;
+            padding: 20px 24px;
             border-top: 1px solid var(--border);
             background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            position: relative;
+            z-index: 1;
         }
         .input-wrapper {
             display: flex;
-            align-items: flex-end;
-            gap: 8px;
+            align-items: center;
+            gap: 12px;
             background: var(--bg-dark);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px;
-            transition: all 0.2s;
+            border-radius: 16px;
+            padding: 10px 16px;
+            transition: all var(--transition-normal);
         }
         .input-wrapper:focus-within {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 0 4px var(--primary-glow), var(--shadow-md);
         }
         .chat-input {
             flex: 1;
             background: none;
             border: none;
             color: var(--text);
-            font-size: 14px;
-            line-height: 1.5;
+            font-size: 15px;
+            line-height: 24px;
             resize: none;
-            max-height: 120px;
+            max-height: 140px;
+            min-height: 24px;
+            padding: 10px 0;
             outline: none;
+            font-family: var(--font-sans);
         }
-        .chat-input::placeholder { color: var(--text-muted); }
+        .chat-input::placeholder {
+            color: var(--text-dim);
+        }
         .send-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: var(--primary);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--gradient-primary);
             border: none;
             color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
             flex-shrink: 0;
+            box-shadow: 0 4px 12px var(--primary-glow);
         }
-        .send-btn:hover { background: var(--primary-dark); transform: scale(1.05); }
-        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px var(--primary-glow);
+        }
+        .send-btn:active:not(:disabled) {
+            transform: translateY(0) scale(0.98);
+        }
+        .send-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
         .send-btn svg { width: 20px; height: 20px; }
 
         /* 右侧预览面板 */
@@ -382,51 +841,71 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: #1a1a2e;
+            background: var(--bg-deep);
+            position: relative;
         }
         .preview-header {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
+            padding: 14px 20px;
             background: var(--bg-card);
+            backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
         }
         .preview-tabs {
-            display: none; /* 默认隐藏，只在code视图时显示 */
+            display: none;
             gap: 4px;
-            margin-right: auto; /* 让文件标签靠左，按钮靠右 */
+            margin-right: auto;
         }
         .preview-tab {
-            padding: 6px 12px;
+            padding: 8px 14px;
             background: none;
             border: none;
             color: var(--text-muted);
             font-size: 13px;
-            border-radius: 6px;
+            font-weight: 500;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
         }
-        .preview-tab:hover { color: var(--text); }
-        .preview-tab.active {
-            background: rgba(255,255,255,0.1);
+        .preview-tab:hover {
             color: var(--text);
+            background: var(--bg-hover);
+        }
+        .preview-tab.active {
+            background: var(--bg-elevated);
+            color: var(--text);
+            border: 1px solid var(--border);
         }
         .preview-actions {
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            margin-left: auto;
         }
         .preview-btn {
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             color: var(--text-muted);
             font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
         }
-        .preview-btn:hover:not(:disabled) { background: rgba(255,255,255,0.15); color: var(--text); }
-        .preview-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .preview-btn:hover:not(:disabled) {
+            background: var(--bg-hover);
+            color: var(--text);
+            border-color: var(--border-light);
+        }
+        .preview-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
         .preview-content {
             flex: 1;
             overflow: hidden;
@@ -441,10 +920,15 @@
             color: var(--text-muted);
         }
         .preview-placeholder svg {
-            width: 64px;
-            height: 64px;
-            opacity: 0.3;
-            margin-bottom: 16px;
+            width: 80px;
+            height: 80px;
+            opacity: 0.2;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        .preview-placeholder p {
+            font-size: 15px;
+            color: var(--text-dim);
         }
         .preview-iframe {
             width: 100%;
@@ -455,13 +939,14 @@
         .code-view {
             height: 100%;
             overflow: auto;
-            padding: 16px;
+            padding: 20px;
             font-family: var(--font-mono);
             font-size: 13px;
-            line-height: 1.6;
+            line-height: 1.7;
             white-space: pre-wrap;
-            color: #e2e8f0;
+            color: var(--text-secondary);
             display: none;
+            background: var(--bg-dark);
         }
         .code-view.active { display: block; }
         .preview-frame-container { display: none; height: 100%; }
@@ -477,320 +962,389 @@
         /* Toast */
         .toast-container {
             position: fixed;
-            top: 70px;
-            right: 20px;
+            top: 80px;
+            right: 24px;
             z-index: 1000;
         }
         .toast {
-            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
             background: var(--bg-card);
+            backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            margin-bottom: 8px;
-            animation: slideIn 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-radius: 14px;
+            margin-bottom: 10px;
+            animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-lg);
+            font-size: 14px;
+            font-weight: 500;
         }
-        .toast.success { border-left: 3px solid var(--success); }
-        .toast.error { border-left: 3px solid var(--error); }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .toast.success {
+            border-color: var(--success);
+            box-shadow: var(--shadow-lg), 0 0 20px var(--success-glow);
+        }
+        .toast.error {
+            border-color: var(--error);
+            box-shadow: var(--shadow-lg), 0 0 20px var(--error-glow);
+        }
+        @keyframes toastIn {
+            from {
+                transform: translateX(100%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
         }
 
         /* 分隔条 */
         .resizer {
-            width: 4px;
+            width: 1px;
             background: var(--border);
             cursor: col-resize;
-            transition: background 0.2s;
+            transition: all var(--transition-normal);
+            position: relative;
         }
-        .resizer:hover { background: var(--primary); }
+        .resizer::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            width: 8px;
+            left: -4px;
+        }
+        .resizer:hover {
+            background: var(--primary);
+            width: 3px;
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
 
         /* 弹窗 */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
         }
-        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
         .modal {
             background: var(--bg-card);
+            backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 20px;
             width: 90%;
-            max-width: 420px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            max-width: 440px;
+            box-shadow: var(--shadow-lg), var(--shadow-glow);
+            transform: scale(0.95) translateY(20px);
+            transition: all var(--transition-normal);
+        }
+        .modal-overlay.show .modal {
+            transform: scale(1) translateY(0);
         }
         .modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px;
+            padding: 24px;
             border-bottom: 1px solid var(--border);
         }
-        .modal-header h3 { font-size: 18px; }
-        .modal-close {
-            width: 32px;
-            height: 32px;
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 24px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.2s;
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
         }
-        .modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text); }
-        .modal-body { padding: 20px; }
-        .form-group { margin-bottom: 16px; }
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-close:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+            border-color: var(--border-light);
+        }
+        .modal-body { padding: 24px; }
+        .form-group { margin-bottom: 20px; }
         .form-group label {
             display: block;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 500;
             color: var(--text-muted);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .form-group input {
             width: 100%;
-            padding: 12px;
+            padding: 14px 16px;
             background: var(--bg-dark);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 12px;
             color: var(--text);
-            font-size: 14px;
-            transition: all 0.2s;
+            font-size: 15px;
+            transition: all var(--transition-normal);
         }
         .form-group input:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-glow);
         }
         .btn-primary {
             width: 100%;
-            padding: 12px;
-            background: var(--primary);
+            padding: 14px;
+            background: var(--gradient-primary);
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             color: white;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
+            box-shadow: 0 4px 16px var(--primary-glow);
         }
-        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px var(--primary-glow);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
 
         .hidden { display: none !important; }
 
         /* 语言切换器 */
         .lang-switcher {
             position: relative;
-            margin-right: 12px;
         }
         .lang-btn {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            border-radius: 8px;
+            gap: 8px;
+            padding: 10px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
             color: var(--text);
             font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
         }
-        .lang-btn:hover { background: rgba(255,255,255,0.15); }
+        .lang-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+        .lang-btn svg {
+            opacity: 0.7;
+        }
         .lang-dropdown {
             position: absolute;
-            top: calc(100% + 8px);
+            top: calc(100% + 10px);
             right: 0;
             background: var(--bg-card);
+            backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            min-width: 120px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border-radius: 12px;
+            min-width: 140px;
+            box-shadow: var(--shadow-lg);
             opacity: 0;
             visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.2s;
+            transform: translateY(-8px) scale(0.96);
+            transition: all var(--transition-normal);
             z-index: 100;
+            overflow: hidden;
         }
         .lang-dropdown.show {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
         }
         .lang-option {
             display: block;
             width: 100%;
-            padding: 10px 16px;
+            padding: 12px 18px;
             background: none;
             border: none;
             color: var(--text-muted);
             font-size: 14px;
+            font-weight: 500;
             text-align: left;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-fast);
         }
         .lang-option:hover {
-            background: rgba(255,255,255,0.05);
+            background: var(--bg-hover);
             color: var(--text);
         }
-        .lang-option:first-child { border-radius: 8px 8px 0 0; }
-        .lang-option:last-child { border-radius: 0 0 8px 8px; }
 
-        /* 项目侧边栏 */
-        .projects-sidebar {
-            width: 220px;
-            min-width: 220px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            transition: width 0.2s, min-width 0.2s;
-        }
-        .projects-sidebar.collapsed {
-            width: 0;
-            min-width: 0;
-            overflow: hidden;
-            border-right: none;
-        }
-        .sidebar-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .sidebar-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-        }
-        .btn-new-project {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            background: var(--primary);
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin: 12px 16px;
-        }
-        .btn-new-project:hover { background: var(--primary-dark); }
-        .btn-new-project svg { width: 14px; height: 14px; }
-        .projects-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-        .project-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
+        /* 思考步骤样式 */
+        .thinking-steps {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(0, 20, 40, 0.6);
             border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 4px;
+            border: 1px solid var(--border);
+            max-height: 200px;
+            overflow-y: auto;
         }
-        .project-item:hover { background: rgba(255,255,255,0.05); }
-        .project-item.active { background: rgba(102, 126, 234, 0.2); }
-        .project-item-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            background: rgba(102, 126, 234, 0.2);
+        .thinking-steps::-webkit-scrollbar {
+            width: 4px;
+        }
+        .thinking-steps::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        .thinking-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            animation: stepFadeIn 0.3s ease-out;
+        }
+        .thinking-step:last-child {
+            border-bottom: none;
+        }
+        @keyframes stepFadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .thinking-step-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
+            font-size: 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
         }
-        .project-item-icon svg { width: 16px; height: 16px; color: var(--primary); }
-        .project-item-info { flex: 1; min-width: 0; }
-        .project-item-name {
+        .thinking-step-icon.thinking { background: rgba(0, 212, 255, 0.2); color: var(--primary); }
+        .thinking-step-icon.tool { background: rgba(0, 255, 136, 0.2); color: var(--accent); }
+        .thinking-step-icon.content { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
+        .thinking-step-icon.complete { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .thinking-step-icon.error { background: rgba(255, 71, 87, 0.2); color: var(--error); }
+        .thinking-step-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .thinking-step-title {
             font-size: 13px;
             font-weight: 500;
             color: var(--text);
+            margin-bottom: 2px;
+        }
+        .thinking-step-detail {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .project-item-time {
-            font-size: 11px;
-            color: var(--text-muted);
+        .thinking-step-time {
+            font-size: 10px;
+            color: var(--text-dim);
+            flex-shrink: 0;
         }
-        .project-item-delete {
-            opacity: 0;
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-        .project-item:hover .project-item-delete { opacity: 1; }
-        .project-item-delete:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
-        .sidebar-toggle {
-            padding: 12px 16px;
-            border-top: 1px solid var(--border);
+        .thinking-header {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
         }
-        .btn-toggle-sidebar {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: none;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-muted);
+        .thinking-header-title {
             font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .thinking-header-icon {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        /* 思考内容样式 */
+        .thinking-step.thinking-live {
+            background: rgba(0, 212, 255, 0.05);
+            border-left: 2px solid var(--primary);
+            padding-left: 10px;
+            margin-left: -10px;
+        }
+        .thinking-step-thinking {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-top: 6px;
+            padding: 8px;
+            background: rgba(0, 20, 40, 0.4);
+            border-radius: 6px;
+            font-family: var(--font-sans);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .thinking-expand-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--primary);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 4px;
             cursor: pointer;
+            margin-top: 6px;
             transition: all 0.2s;
         }
-        .btn-toggle-sidebar:hover { background: rgba(255,255,255,0.05); color: var(--text); }
-        .projects-empty {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
+        .thinking-expand-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--primary);
         }
-        .projects-empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5; }
-        .projects-empty p { font-size: 13px; }
-        /* 展开按钮（侧边栏收起时显示） */
-        .btn-expand-sidebar {
-            position: fixed;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 24px;
-            height: 60px;
-            background: var(--bg-card);
+        .thinking-full {
+            font-size: 12px;
+            color: var(--text);
+            line-height: 1.6;
+            margin-top: 8px;
+            padding: 12px;
+            background: rgba(0, 20, 40, 0.6);
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 300px;
+            overflow-y: auto;
             border: 1px solid var(--border);
-            border-left: none;
-            border-radius: 0 8px 8px 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--text-muted);
-            z-index: 100;
         }
-        .btn-expand-sidebar:hover { background: rgba(255,255,255,0.05); color: var(--text); }
-        .projects-sidebar.collapsed ~ .btn-expand-sidebar { display: flex; }
+        .thinking-full::-webkit-scrollbar {
+            width: 6px;
+        }
+        .thinking-full::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -1112,12 +1666,14 @@
                 };
             },
 
-            // 启动生成任务
-            async generate(prompt) {
+            // 启动生成任务 (支持多轮对话)
+            // messages: 对话历史 [{type: 'user'|'ai', content: string}]
+            // currentHtml: 当前的 HTML 代码（用于修改）
+            async generate(prompt, messages = [], currentHtml = '') {
                 const resp = await fetch(`${AGENT_API_URL}/api/generate`, {
                     method: 'POST',
                     headers: this.getAuthHeaders(),
-                    body: JSON.stringify({ prompt })
+                    body: JSON.stringify({ prompt, messages, currentHtml })
                 });
                 if (!resp.ok) {
                     if (resp.status === 401) {
@@ -1506,10 +2062,41 @@
             state.isGenerating = true;
             document.getElementById('send-btn').disabled = true;
 
+            // 如果没有当前项目，自动创建一个
+            if (!state.projectId) {
+                try {
+                    console.log('No project, creating one...');
+                    const project = await ProjectAPI.create(I18n.t('workspace.project') || 'New Project');
+                    state.projectId = project.id;
+                    state.projectName = project.name;
+                    state.projects.unshift(project);
+                    renderProjectsList();
+                    document.querySelector('.project-name').textContent = project.name;
+                } catch (err) {
+                    console.error('Failed to create project:', err);
+                }
+            }
+
+            // 收集当前的对话历史（在添加新消息之前）
+            const conversationHistory = collectMessages();
+            const currentHtml = state.currentCode.html || '';
+
+            console.log('Conversation context:', {
+                historyLength: conversationHistory.length,
+                hasCurrentHtml: !!currentHtml,
+                currentHtmlLength: currentHtml.length
+            });
+
             // 添加用户消息
             addMessage(prompt, 'user');
             input.value = '';
             input.style.height = 'auto';
+
+            // 立即保存用户消息（确保消息不丢失）
+            if (state.projectId) {
+                state.isDirty = true;
+                saveProject().catch(err => console.warn('Failed to save user message:', err));
+            }
 
             // 创建 AI 响应消息（用于流式更新）
             const aiMsg = createStreamingMessage();
@@ -1520,24 +2107,31 @@
             let sessionId = null;
 
             try {
-                console.log('1. Sending generate request...');
+                console.log('1. Sending generate request with conversation context...');
 
-                // 先发起生成请求获取 sessionId（使用 AgentAPI 自动添加认证）
-                const initData = await AgentAPI.generate(prompt);
+                // 发起生成请求，包含对话历史和当前代码
+                const initData = await AgentAPI.generate(prompt, conversationHistory, currentHtml);
                 sessionId = initData.sessionId;
                 console.log('2. Got sessionId:', sessionId);
 
                 // 直接轮询等待结果（更可靠）
                 console.log('3. Polling for result...');
-                updateStreamingMessage(aiMsg, 'Generating your page...');
+                const isModification = currentHtml && currentHtml.length > 0;
+                const statusMsg = isModification
+                    ? I18n.t('workspace.generate.modifying')
+                    : I18n.t('workspace.generate.generating');
+                updateStreamingMessage(aiMsg, statusMsg);
 
                 const result = await pollForResultWithProgress(sessionId, aiMsg, 300000); // 5分钟超时
 
                 if (result) {
                     console.log('4. Got result! HTML length:', result.html?.length);
-                    finalizeMessage(aiMsg, result.message || I18n.t('workspace.generate.success'));
+                    const successMsg = isModification
+                        ? I18n.t('workspace.modify.success')
+                        : I18n.t('workspace.generate.success');
+                    finalizeMessage(aiMsg, result.message || successMsg);
                     updatePreview(result.html, result.css || '');
-                    UI.success(I18n.t('workspace.generate.success'));
+                    UI.success(successMsg);
                     // 生成成功后自动保存项目
                     if (state.projectId) {
                         await saveProject();
@@ -1620,22 +2214,12 @@
             });
         }
 
-        // 带进度更新的轮询
+        // 带进度更新的轮询（支持思考步骤显示）
         async function pollForResultWithProgress(sessionId, aiMsg, timeout = 300000) {
             const startTime = Date.now();
-            const pollInterval = 2000; // 每2秒轮询一次
+            const pollInterval = 500; // 每500ms轮询一次（实时显示思考内容）
             let pollCount = 0;
-            const statusMessages = [
-                'AI is thinking...',
-                'Generating your page...',
-                'Creating HTML structure...',
-                'Adding styles...',
-                'Polishing the design...',
-                'This may take 1-3 minutes...',
-                'Still working on it...',
-                'Almost there...',
-                'Finalizing...'
-            ];
+            let lastStepsCount = 0;
 
             while (Date.now() - startTime < timeout) {
                 try {
@@ -1646,12 +2230,19 @@
                     const data = await AgentAPI.getSession(sessionId);
 
                     if (data.session) {
-                        console.log('Status:', data.session.status);
+                        // 每次都更新思考步骤（包括实时思考内容）
+                        if (data.session.thinkingSteps && data.session.thinkingSteps.length > 0) {
+                            updateThinkingSteps(aiMsg, data.session.thinkingSteps);
+                            lastStepsCount = data.session.thinkingSteps.length;
 
-                        // 更新进度消息（每10秒切换一次）
-                        const msgIndex = Math.min(Math.floor(pollCount / 5), statusMessages.length - 1);
-                        const elapsedSec = Math.round((Date.now() - startTime) / 1000);
-                        updateStreamingMessage(aiMsg, `${statusMessages[msgIndex]} (${elapsedSec}s)`);
+                            // 使用最新步骤的描述作为状态消息
+                            const latestStep = data.session.thinkingSteps[data.session.thinkingSteps.length - 1];
+                            if (latestStep?.description) {
+                                updateStreamingMessage(aiMsg, `${latestStep.description} (${elapsed}s)`);
+                            }
+                        } else {
+                            updateStreamingMessage(aiMsg, `AI is working... (${elapsed}s)`);
+                        }
 
                         // 如果有流式内容，显示在代码视图
                         if (data.session.streamContent) {
@@ -1660,10 +2251,12 @@
 
                         if (data.session.status === 'completed' && data.session.result) {
                             console.log('✓ Got result!');
+                            hideThinkingSteps(aiMsg);
                             return data.session.result;
                         }
                         if (data.session.status === 'error') {
                             console.log('✗ Generation error');
+                            hideThinkingSteps(aiMsg);
                             // 即使出错也可能有 fallback result
                             if (data.session.result) {
                                 return data.session.result;
@@ -1679,6 +2272,7 @@
             }
 
             console.log('Poll timeout after', timeout/1000, 'seconds');
+            hideThinkingSteps(aiMsg);
             return null;
         }
 
@@ -1702,7 +2296,7 @@
             return null;
         }
 
-        // 创建流式消息容器
+        // 创建流式消息容器（带思考步骤）
         function createStreamingMessage() {
             const container = document.getElementById('chat-messages');
             const welcome = document.getElementById('welcome');
@@ -1723,11 +2317,230 @@
                             <span class="status-text">Connecting to AI...</span>
                         </p>
                     </div>
+                    <div class="thinking-steps" style="display: none;">
+                        <div class="thinking-header">
+                            <span class="thinking-header-icon">🧠</span>
+                            <span class="thinking-header-title">AI Thinking Process</span>
+                        </div>
+                        <div class="thinking-steps-list"></div>
+                    </div>
                 </div>
             `;
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
             return msg;
+        }
+
+        // 获取思考步骤的图标和样式类
+        function getStepIconInfo(step) {
+            // 根据 icon 字段或 type 字段判断
+            const iconType = step.icon || step.type;
+
+            const iconMap = {
+                'thinking': { icon: '🧠', class: 'thinking' },
+                'reading': { icon: '📖', class: 'thinking' },
+                'planning': { icon: '📋', class: 'thinking' },
+                'coding': { icon: '💻', class: 'content' },
+                'styling': { icon: '🎨', class: 'content' },
+                'success': { icon: '✅', class: 'complete' },
+                'complete': { icon: '✅', class: 'complete' },
+                'error': { icon: '❌', class: 'error' },
+                'warning': { icon: '⚠️', class: 'error' },
+                'template': { icon: '📦', class: 'tool' },
+                'fallback': { icon: '📦', class: 'tool' },
+                'rollback': { icon: '↩️', class: 'error' },
+                'tool': { icon: '🔧', class: 'tool' },
+                'init': { icon: '🚀', class: 'thinking' },
+                'context': { icon: '📖', class: 'thinking' },
+                'generating': { icon: '⚡', class: 'content' },
+            };
+
+            // 优先使用映射
+            if (iconMap[iconType]) {
+                return { ...iconMap[iconType], title: step.description || iconType };
+            }
+
+            // 特殊处理
+            if (step.tool) {
+                return { icon: '🔧', class: 'tool', title: `Using: ${step.tool}` };
+            }
+            if (step.type === 'result') {
+                if (step.subtype === 'success') {
+                    return { icon: '✅', class: 'complete', title: 'Completed' };
+                }
+                return { icon: '❌', class: 'error', title: 'Error' };
+            }
+            if (step.thinking) {
+                return { icon: '💭', class: 'thinking', title: 'Thinking' };
+            }
+            if (step.content) {
+                return { icon: '✍️', class: 'content', title: 'Writing' };
+            }
+
+            return { icon: '⚡', class: 'thinking', title: step.description || 'Processing' };
+        }
+
+        // 渲染单个思考步骤
+        function renderThinkingStep(step) {
+            const iconInfo = getStepIconInfo(step);
+            const time = step.timestamp ? new Date(step.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second: '2-digit'}) : '';
+            const stepId = 'step-' + Math.random().toString(36).substr(2, 9);
+
+            // 获取详细信息
+            let detail = step.detail || '';
+            let thinkingPreview = '';
+            let hasFullThinking = false;
+
+            if (!detail) {
+                if (step.tool) {
+                    detail = step.toolInput ? JSON.stringify(step.toolInput).substring(0, 50) + '...' : '';
+                } else if (step.content) {
+                    detail = step.content.substring(0, 100) + (step.content.length > 100 ? '...' : '');
+                }
+            }
+
+            // 处理思考内容
+            if (step.thinking && step.thinking.length > 0) {
+                hasFullThinking = step.thinking.length > 150;
+                thinkingPreview = step.thinking.substring(0, 150).replace(/\n/g, ' ');
+                if (hasFullThinking) {
+                    thinkingPreview += '...';
+                }
+            }
+
+            // 对于 thinking 类型，显示实时思考内容
+            const isThinkingType = step.type === 'thinking';
+            const thinkingClass = isThinkingType ? 'thinking-live' : '';
+
+            let html = `
+                <div class="thinking-step ${thinkingClass}" id="${stepId}">
+                    <div class="thinking-step-icon ${iconInfo.class}">${iconInfo.icon}</div>
+                    <div class="thinking-step-content">
+                        <div class="thinking-step-title">${escapeHtml(iconInfo.title)}</div>`;
+
+            // 显示思考内容预览
+            if (thinkingPreview) {
+                html += `<div class="thinking-step-thinking">${escapeHtml(thinkingPreview)}</div>`;
+                if (hasFullThinking) {
+                    html += `<button class="thinking-expand-btn" onclick="toggleThinking('${stepId}')">Show full reasoning</button>`;
+                    html += `<div class="thinking-full" style="display:none;">${escapeHtml(step.thinking)}</div>`;
+                }
+            } else if (detail) {
+                html += `<div class="thinking-step-detail">${escapeHtml(detail)}</div>`;
+            }
+
+            html += `
+                    </div>
+                    <div class="thinking-step-time">${time}</div>
+                </div>
+            `;
+
+            return html;
+        }
+
+        // 切换显示完整思考内容
+        function toggleThinking(stepId) {
+            const step = document.getElementById(stepId);
+            if (!step) return;
+            const full = step.querySelector('.thinking-full');
+            const btn = step.querySelector('.thinking-expand-btn');
+            const preview = step.querySelector('.thinking-step-thinking');
+            if (full && btn) {
+                if (full.style.display === 'none') {
+                    full.style.display = 'block';
+                    if (preview) preview.style.display = 'none';
+                    btn.textContent = 'Hide reasoning';
+                } else {
+                    full.style.display = 'none';
+                    if (preview) preview.style.display = 'block';
+                    btn.textContent = 'Show full reasoning';
+                }
+            }
+        }
+
+        // 更新思考步骤显示
+        function updateThinkingSteps(msg, steps) {
+            if (!steps || steps.length === 0) return;
+
+            const container = msg.querySelector('.thinking-steps');
+            const list = msg.querySelector('.thinking-steps-list');
+
+            if (!container || !list) {
+                console.error('Could not find thinking-steps elements');
+                return;
+            }
+
+            container.style.display = 'block';
+            const currentCount = list.children.length;
+
+            // 更新现有的 thinking 类型步骤的实时内容
+            steps.forEach((step, index) => {
+                if (index < currentCount && step.type === 'thinking' && step.thinking) {
+                    const existingStep = list.children[index];
+                    if (existingStep) {
+                        // 更新思考内容预览
+                        let thinkingEl = existingStep.querySelector('.thinking-step-thinking');
+                        const preview = step.thinking.length > 150
+                            ? step.thinking.substring(0, 150).replace(/\n/g, ' ') + '...'
+                            : step.thinking.replace(/\n/g, ' ');
+
+                        if (!thinkingEl) {
+                            // 创建思考内容元素
+                            const contentEl = existingStep.querySelector('.thinking-step-content');
+                            if (contentEl) {
+                                const thinkingHtml = `<div class="thinking-step-thinking">${escapeHtml(preview)}</div>`;
+                                const titleEl = contentEl.querySelector('.thinking-step-title');
+                                if (titleEl) {
+                                    titleEl.insertAdjacentHTML('afterend', thinkingHtml);
+                                }
+                            }
+                        } else {
+                            thinkingEl.textContent = preview;
+                        }
+
+                        // 更新完整思考内容
+                        let fullEl = existingStep.querySelector('.thinking-full');
+                        if (step.thinking.length > 150) {
+                            if (!fullEl) {
+                                const contentEl = existingStep.querySelector('.thinking-step-content');
+                                if (contentEl) {
+                                    const btnHtml = `<button class="thinking-expand-btn" onclick="toggleThinking('thinking-step-${index}')">Show full reasoning</button>`;
+                                    const fullHtml = `<div class="thinking-full" style="display:none;">${escapeHtml(step.thinking)}</div>`;
+                                    contentEl.insertAdjacentHTML('beforeend', btnHtml + fullHtml);
+                                }
+                            } else {
+                                fullEl.textContent = step.thinking;
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 渲染新增的步骤
+            if (steps.length > currentCount) {
+                const newSteps = steps.slice(currentCount);
+                newSteps.forEach(step => {
+                    list.insertAdjacentHTML('beforeend', renderThinkingStep(step));
+                });
+
+                // 滚动到底部
+                container.scrollTop = container.scrollHeight;
+                const chatContainer = document.getElementById('chat-messages');
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            }
+        }
+
+        // 隐藏思考步骤（完成后）
+        function hideThinkingSteps(msg) {
+            const container = msg.querySelector('.thinking-steps');
+            if (container) {
+                // 渐隐效果
+                container.style.transition = 'opacity 0.5s, max-height 0.5s';
+                container.style.opacity = '0.6';
+                container.style.maxHeight = '100px';
+            }
         }
 
         // 更新流式消息状态
@@ -2021,7 +2834,7 @@
                         </svg>
                     </div>
                     <div class="project-item-info">
-                        <div class="project-item-name">${escapeHtml(project.name)}</div>
+                        <div class="project-item-name" title="${I18n.t('workspace.renameHint') || 'Double-click to rename'}">${escapeHtml(project.name)}</div>
                         <div class="project-item-time">${timeStr}</div>
                     </div>
                     <button class="project-item-delete" title="Delete">
@@ -2034,9 +2847,58 @@
 
                 // 点击加载项目
                 item.addEventListener('click', (e) => {
-                    if (!e.target.closest('.project-item-delete')) {
+                    if (!e.target.closest('.project-item-delete') && !e.target.closest('.project-item-name-input')) {
                         loadProject(project.id);
                     }
+                });
+
+                // 双击重命名项目
+                const nameEl = item.querySelector('.project-item-name');
+                nameEl.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    const currentName = project.name;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = currentName;
+                    input.className = 'project-item-name-input';
+                    nameEl.style.display = 'none';
+                    nameEl.parentNode.insertBefore(input, nameEl.nextSibling);
+                    input.focus();
+                    input.select();
+
+                    const finishEdit = async () => {
+                        const newName = input.value.trim() || currentName;
+                        input.remove();
+                        nameEl.style.display = '';
+
+                        if (newName !== currentName) {
+                            project.name = newName;
+                            nameEl.textContent = newName;
+
+                            // 如果是当前项目，同步更新
+                            if (project.id === state.projectId) {
+                                state.projectName = newName;
+                                document.querySelector('.project-name').textContent = newName;
+                                state.isDirty = true;
+                                await saveProject();
+                            } else {
+                                // 直接更新数据库
+                                await ProjectAPI.update(project.id, { name: newName });
+                            }
+                        }
+                    };
+
+                    input.addEventListener('blur', finishEdit);
+                    input.addEventListener('keydown', (ev) => {
+                        if (ev.key === 'Enter') {
+                            ev.preventDefault();
+                            input.blur();
+                        } else if (ev.key === 'Escape') {
+                            input.value = currentName;
+                            input.blur();
+                        }
+                    });
+                    input.addEventListener('click', (ev) => ev.stopPropagation());
                 });
 
                 // 删除项目
@@ -2172,9 +3034,11 @@
             const msgs = [];
             document.querySelectorAll('#chat-messages .message').forEach(el => {
                 if (el.classList.contains('welcome')) return;
+                const avatar = el.querySelector('.message-avatar');
+                const isUser = avatar && !avatar.classList.contains('ai');
                 msgs.push({
-                    type: el.querySelector('.msg-user') ? 'user' : 'ai',
-                    content: el.querySelector('.msg-text')?.textContent || ''
+                    type: isUser ? 'user' : 'ai',
+                    content: el.querySelector('.message-text')?.textContent || ''
                 });
             });
             return msgs;
@@ -2246,6 +3110,60 @@
             document.getElementById('btn-expand-sidebar').addEventListener('click', () => {
                 document.getElementById('projects-sidebar').classList.remove('collapsed');
             });
+
+            // 双击编辑项目名称
+            const projectNameEl = document.querySelector('.project-name');
+            if (projectNameEl) {
+                projectNameEl.style.cursor = 'pointer';
+                projectNameEl.title = I18n.t('workspace.renameHint') || 'Double-click to rename';
+
+                projectNameEl.addEventListener('dblclick', () => {
+                    if (!state.projectId) return;
+
+                    const currentName = state.projectName;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = currentName;
+                    input.className = 'project-name-input';
+                    input.style.cssText = 'font-size: inherit; font-weight: inherit; border: 1px solid var(--primary); border-radius: 4px; padding: 2px 8px; background: var(--bg-secondary); color: inherit; width: 200px;';
+
+                    projectNameEl.style.display = 'none';
+                    projectNameEl.parentNode.insertBefore(input, projectNameEl.nextSibling);
+                    input.focus();
+                    input.select();
+
+                    const finishEdit = async () => {
+                        const newName = input.value.trim() || currentName;
+                        input.remove();
+                        projectNameEl.style.display = '';
+
+                        if (newName !== currentName) {
+                            state.projectName = newName;
+                            projectNameEl.textContent = newName;
+                            state.isDirty = true;
+                            await saveProject();
+
+                            // 更新侧边栏项目列表中的名称
+                            const project = state.projects.find(p => p.id === state.projectId);
+                            if (project) {
+                                project.name = newName;
+                                renderProjectsList();
+                            }
+                        }
+                    };
+
+                    input.addEventListener('blur', finishEdit);
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            input.blur();
+                        } else if (e.key === 'Escape') {
+                            input.value = currentName;
+                            input.blur();
+                        }
+                    });
+                });
+            }
         }
 
         // ========== 语言切换 ==========
