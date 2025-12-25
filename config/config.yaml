@@ -7,7 +7,7 @@ mysql:
   port: 3306
   username: root
   password: ""
-  database: test
+  database: vibe_coding
   charset: utf8mb4
   max_idle_conns: 50
   max_open_conns: 200

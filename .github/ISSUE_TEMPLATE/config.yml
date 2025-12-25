@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/test-tt/vibe-coding/discussions
+    about: Use GitHub Discussions for general questions and conversations
+  - name: Security Vulnerability
+    url: mailto:security@vibe-coding.dev
+    about: Report security vulnerabilities privately via email

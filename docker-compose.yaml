@@ -11,7 +11,7 @@ services:
       - APP_MYSQL_PORT=3306
       - APP_MYSQL_USERNAME=root
       - APP_MYSQL_PASSWORD=root123
-      - APP_MYSQL_DATABASE=test
+      - APP_MYSQL_DATABASE=vibe_coding
       - APP_REDIS_HOST=redis
       - APP_REDIS_PORT=6379
     depends_on:
@@ -30,7 +30,7 @@ services:
     container_name: test-tt-mysql
     environment:
       - MYSQL_ROOT_PASSWORD=root123
-      - MYSQL_DATABASE=test
+      - MYSQL_DATABASE=vibe_coding
     ports:
       - "3306:3306"
     volumes:
