@@ -10,7 +10,7 @@ mysql:
   port: 3306
   username: ${MYSQL_USER:root}
   password: ${MYSQL_PASSWORD:}
-  database: ${MYSQL_DATABASE:test}
+  database: ${MYSQL_DATABASE:vibe_coding}
   charset: utf8mb4
   max_idle_conns: 50
   max_open_conns: 200
