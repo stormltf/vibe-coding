@@ -1,13 +1,13 @@
 module github.com/test-tt
 
-go 1.23.10
+go 1.24.0
 
 require (
 	github.com/bits-and-blooms/bloom/v3 v3.7.1
 	github.com/bytedance/sonic v1.14.0
 	github.com/cloudwego/hertz v0.9.7
 	github.com/dgraph-io/ristretto v0.2.0
-	github.com/go-playground/validator/v10 v10.22.0
+	github.com/go-playground/validator/v10 v10.30.1
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/hertz-contrib/gzip v0.0.4
@@ -22,7 +22,8 @@ require (
 	go.opentelemetry.io/otel/sdk v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/zap v1.27.1
-	golang.org/x/sync v0.9.0
+	golang.org/x/crypto v0.46.0
+	golang.org/x/sync v0.19.0
 	golang.org/x/time v0.5.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -44,7 +45,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.20.0 // indirect
@@ -83,10 +84,9 @@ require (
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
-	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
-	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/tools v0.39.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 )
