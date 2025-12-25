@@ -104,7 +104,7 @@ jobs:
           CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-w -s" -o build/test-tt-darwin-arm64 ./cmd/api
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: binaries
           path: build/
